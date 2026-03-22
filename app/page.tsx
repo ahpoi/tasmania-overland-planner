@@ -1,23 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { TripProvider, useTrip } from "@/lib/trip-context"
-import { TripSummary } from "@/components/trip-summary"
-import { DayCard } from "@/components/day-card"
-import { ElevationChart } from "@/components/elevation-chart"
-import { TrackMap } from "@/components/track-map"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Mountain, TreePine, Compass, Map, Ship, Footprints, PanelRightOpen } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import {useState} from "react"
+import {TripProvider, useTrip} from "@/lib/trip-context"
+import {DayCard} from "@/components/day-card"
+import {ElevationChart} from "@/components/elevation-chart"
+import {TrackMap} from "@/components/track-map"
+import {Label} from "@/components/ui/label"
+import {Switch} from "@/components/ui/switch"
+import {Compass, Footprints, Map, Ship} from "lucide-react"
+import {Button} from "@/components/ui/button"
+
 import {
   Drawer,
   DrawerContent,
@@ -93,26 +85,6 @@ function HikePlanner() {
                   {exitMethod === "ferry" ? "Ferry from Narcissus" : "Walk to Cynthia Bay"}
                 </Label>
               </div>
-
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="rounded-full bg-card/90">
-                    <PanelRightOpen className="mr-2 h-4 w-4" />
-                    Overview
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:max-w-lg">
-                  <SheetHeader className="border-b border-border/70 pb-4">
-                    <SheetTitle>Trip Overview</SheetTitle>
-                    <SheetDescription>
-                      Review the current route totals and trip-wide settings without leaving the planner.
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="overflow-y-auto p-4">
-                    <TripSummary />
-                  </div>
-                </SheetContent>
-              </Sheet>
             </div>
           </div>
         </div>

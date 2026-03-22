@@ -36,6 +36,11 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [selectedDay, setSelectedDay] = useState(1)
   const [selectedSideTrips, setSelectedSideTrips] = useState<string[]>([])
 
+  const handleSelectedDayChange = (day: number) => {
+    setSelectedDay(day)
+    setSelectedSideTrips([])
+  }
+
   const toggleSideTrip = (id: string) => {
     setSelectedSideTrips((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
@@ -110,7 +115,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         exitMethod,
         setExitMethod,
         selectedDay,
-        setSelectedDay,
+        setSelectedDay: handleSelectedDayChange,
         selectedSideTrips,
         toggleSideTrip,
         getDayTotals,
