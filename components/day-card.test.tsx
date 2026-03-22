@@ -17,7 +17,7 @@ describe("DayCard side trip interactions", () => {
     const checkbox = screen.getByRole("checkbox", { name: /Cradle Mountain Summit/i })
     expect(checkbox).not.toBeChecked()
 
-    await user.click(screen.getByText(/Iconic summit scramble/i))
+    await user.click(screen.getByText(/Official side trip from Kitchen Hut/i))
 
     expect(checkbox).toBeChecked()
     expect(

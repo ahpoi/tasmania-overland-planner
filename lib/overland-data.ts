@@ -20,6 +20,8 @@ export interface SideTrip {
   description: string
   difficulty: "Easy" | "Moderate" | "Hard" | "Very Hard"
   waypointId?: string
+  junctionLat?: number
+  junctionLng?: number
   elevationProfile?: { distance: number; elevation: number }[]
 }
 
@@ -47,14 +49,14 @@ export const waypoints: Waypoint[] = [
   { id: "bert-nichols", name: "Bert Nichols Hut", lat: -41.9320372, lng: 146.0893035, type: "hut", description: "Also known as Windy Ridge Hut" },
   { id: "narcissus", name: "Narcissus Hut", lat: -42.0123791, lng: 146.1017329, type: "hut", description: "Ferry pickup point" },
   { id: "cynthia-bay", name: "Cynthia Bay", lat: -42.1163706, lng: 146.1742892, type: "end", description: "Lake St Clair Visitor Centre" },
-  { id: "mt-ossa", name: "Mt Ossa", lat: -41.87061, lng: 146.03298, type: "peak", description: "Tasmania's highest peak (1617m)", sideTripId: "mt-ossa" },
-  { id: "cradle-mountain", name: "Cradle Mountain", lat: -41.6644, lng: 145.9422, type: "peak", description: "Iconic Tasmanian peak (1545m)", sideTripId: "cradle-summit" },
-  { id: "barn-bluff", name: "Barn Bluff", lat: -41.6867, lng: 145.9433, type: "peak", description: "Dramatic peak near Cradle (1559m)", sideTripId: "barn-bluff" },
-  { id: "pelion-east", name: "Pelion East", lat: -41.84, lng: 146.06, type: "peak", description: "Great views, shorter climb", sideTripId: "pelion-east" },
-  { id: "mt-oakleigh", name: "Mt Oakleigh", lat: -41.82, lng: 146.08, type: "peak", description: "Panoramic views", sideTripId: "mt-oakleigh" },
-  { id: "hartnett-falls", name: "Hartnett Falls", lat: -41.91, lng: 146.09, type: "waterfall", description: "Beautiful waterfall off main track", sideTripId: "hartnett-falls" },
-  { id: "fergusson-falls", name: "Fergusson Falls", lat: -41.905, lng: 146.085, type: "waterfall", description: "Side trip from Kia Ora", sideTripId: "fergusson-falls" },
-  { id: "dalton-falls", name: "D'Alton Falls", lat: -41.908, lng: 146.088, type: "waterfall", description: "Combined with Fergusson Falls loop", sideTripId: "dalton-falls" },
+  { id: "mt-ossa", name: "Mt Ossa", lat: -41.87072, lng: 146.03297, type: "peak", description: "Tasmania's highest peak (1617m)", sideTripId: "mt-ossa" },
+  { id: "cradle-mountain", name: "Cradle Mountain", lat: -41.6846445, lng: 145.9513044, type: "peak", description: "Iconic Tasmanian peak (1545m)", sideTripId: "cradle-summit" },
+  { id: "barn-bluff", name: "Barn Bluff", lat: -41.72404, lng: 145.92303, type: "peak", description: "Tasmania's fourth-highest mountain (1559m)", sideTripId: "barn-bluff" },
+  { id: "pelion-east", name: "Pelion East", lat: -41.8572298, lng: 146.0676204, type: "peak", description: "Steep summit with views over Pelion Gap (1461m)", sideTripId: "pelion-east" },
+  { id: "mt-oakleigh", name: "Mt Oakleigh", lat: -41.805, lng: 146.03611, type: "peak", description: "Panoramic summit above Pelion Plains (1286m)", sideTripId: "mt-oakleigh" },
+  { id: "hartnett-falls", name: "Hartnett Falls", lat: -41.9134075, lng: 146.1282551, type: "waterfall", description: "Popular Mersey River waterfall reached from the Overland Track", sideTripId: "hartnett-falls" },
+  { id: "fergusson-falls", name: "Fergusson Falls", lat: -41.9084768, lng: 146.1221974, type: "waterfall", description: "Short detour waterfall usually paired with D'Alton Falls", sideTripId: "fergusson-falls" },
+  { id: "dalton-falls", name: "D'Alton Falls", lat: -41.908132, lng: 146.1201569, type: "waterfall", description: "Mersey River waterfall on the shared D'Alton/Fergusson detour", sideTripId: "dalton-falls" },
 ]
 
 export const days: DaySegment[] = [
@@ -163,161 +165,174 @@ export const sideTrips: SideTrip[] = [
     id: "cradle-summit",
     dayId: 1,
     name: "Cradle Mountain Summit",
-    distanceKm: 5.0,
-    ascentM: 450,
-    descentM: 450,
-    timeHoursMin: 2.5,
-    timeHoursMax: 4,
-    description: "Iconic summit scramble with spectacular 360° views. Rocky terrain, some scrambling required.",
+    distanceKm: 2.0,
+    ascentM: 395,
+    descentM: 395,
+    timeHoursMin: 2,
+    timeHoursMax: 3,
+    description: "Official side trip from Kitchen Hut with steep boulder scrambling near the summit. Best attempted only in fine weather.",
     difficulty: "Hard",
     waypointId: "cradle-mountain",
+    junctionLat: -41.676908,
+    junctionLng: 145.947534,
     elevationProfile: [
-      { distance: 0, elevation: 1200 },
-      { distance: 1, elevation: 1300 },
-      { distance: 2, elevation: 1450 },
-      { distance: 2.5, elevation: 1545 },
-      { distance: 3.5, elevation: 1400 },
-      { distance: 5, elevation: 1200 }
+      { distance: 0, elevation: 1150 },
+      { distance: 0.5, elevation: 1280 },
+      { distance: 1, elevation: 1545 },
+      { distance: 1.5, elevation: 1350 },
+      { distance: 2, elevation: 1150 }
     ]
   },
   {
     id: "barn-bluff",
     dayId: 1,
     name: "Barn Bluff",
-    distanceKm: 6.0,
-    ascentM: 500,
-    descentM: 500,
+    distanceKm: 7.0,
+    ascentM: 359,
+    descentM: 359,
     timeHoursMin: 3,
-    timeHoursMax: 5,
-    description: "Dramatic peak with challenging climb. Often combined with or as alternative to Cradle Mountain.",
-    difficulty: "Very Hard",
+    timeHoursMax: 4,
+    description: "Steep side trip with boulder scrambling toward the summit. Tasmania Parks recommends attempting it only in fine weather.",
+    difficulty: "Hard",
     waypointId: "barn-bluff",
+    junctionLat: -41.7052,
+    junctionLng: 145.94527,
     elevationProfile: [
       { distance: 0, elevation: 1150 },
-      { distance: 1.5, elevation: 1300 },
-      { distance: 3, elevation: 1559 },
-      { distance: 4.5, elevation: 1350 },
-      { distance: 6, elevation: 1150 }
+      { distance: 2.5, elevation: 1300 },
+      { distance: 3.5, elevation: 1559 },
+      { distance: 5, elevation: 1350 },
+      { distance: 7, elevation: 1150 }
     ]
   },
   {
     id: "mt-ossa",
     dayId: 4,
     name: "Mt Ossa Summit",
-    distanceKm: 10.0,
-    ascentM: 750,
-    descentM: 750,
+    distanceKm: 5.2,
+    ascentM: 487,
+    descentM: 487,
     timeHoursMin: 4,
-    timeHoursMax: 6,
-    description: "Tasmania's highest peak at 1617m. Stunning views on clear days. Exposed alpine terrain.",
+    timeHoursMax: 5,
+    description: "Tasmania's highest peak. The Pelion Gap side trip is steep, exposed, and should not be attempted in heavy rain or snow.",
     difficulty: "Hard",
     waypointId: "mt-ossa",
+    junctionLat: -41.86397,
+    junctionLng: 146.05812,
     elevationProfile: [
-      { distance: 0, elevation: 1100 },
-      { distance: 2, elevation: 1250 },
-      { distance: 4, elevation: 1450 },
-      { distance: 5, elevation: 1617 },
-      { distance: 6, elevation: 1500 },
-      { distance: 8, elevation: 1300 },
-      { distance: 10, elevation: 1100 }
+      { distance: 0, elevation: 1130 },
+      { distance: 1.3, elevation: 1280 },
+      { distance: 2.6, elevation: 1617 },
+      { distance: 3.9, elevation: 1400 },
+      { distance: 5.2, elevation: 1130 }
     ]
   },
   {
     id: "pelion-east",
     dayId: 4,
     name: "Pelion East",
-    distanceKm: 4.0,
-    ascentM: 350,
-    descentM: 350,
+    distanceKm: 2.4,
+    ascentM: 331,
+    descentM: 331,
     timeHoursMin: 2,
-    timeHoursMax: 3,
-    description: "Shorter alternative to Mt Ossa with excellent views. Good bad-weather option.",
-    difficulty: "Moderate",
+    timeHoursMax: 2,
+    description: "Shorter Pelion Gap summit option with steep, exposed terrain and a final scramble onto the summit block.",
+    difficulty: "Hard",
     waypointId: "pelion-east",
+    junctionLat: -41.863984,
+    junctionLng: 146.0580786,
     elevationProfile: [
-      { distance: 0, elevation: 1100 },
-      { distance: 1, elevation: 1200 },
-      { distance: 2, elevation: 1380 },
-      { distance: 3, elevation: 1250 },
-      { distance: 4, elevation: 1100 }
+      { distance: 0, elevation: 1130 },
+      { distance: 0.8, elevation: 1280 },
+      { distance: 1.2, elevation: 1461 },
+      { distance: 1.7, elevation: 1300 },
+      { distance: 2.4, elevation: 1130 }
     ]
   },
   {
     id: "mt-oakleigh",
-    dayId: 4,
+    dayId: 3,
     name: "Mt Oakleigh",
-    distanceKm: 4.5,
-    ascentM: 380,
-    descentM: 380,
-    timeHoursMin: 2,
-    timeHoursMax: 3.5,
-    description: "Peak accessible from Pelion area with panoramic views.",
+    distanceKm: 8.0,
+    ascentM: 516,
+    descentM: 516,
+    timeHoursMin: 4,
+    timeHoursMax: 6,
+    description: "Longer side trip from New Pelion Hut across muddy moorland and forest to panoramic viewpoints above the dolerite spires.",
     difficulty: "Moderate",
     waypointId: "mt-oakleigh",
+    junctionLat: -41.82964,
+    junctionLng: 146.04639,
     elevationProfile: [
-      { distance: 0, elevation: 1100 },
-      { distance: 1.5, elevation: 1280 },
-      { distance: 2.25, elevation: 1410 },
-      { distance: 3, elevation: 1300 },
-      { distance: 4.5, elevation: 1100 }
+      { distance: 0, elevation: 770 },
+      { distance: 2.5, elevation: 980 },
+      { distance: 4, elevation: 1286 },
+      { distance: 5.5, elevation: 1100 },
+      { distance: 8, elevation: 770 }
     ]
   },
   {
     id: "fergusson-falls",
     dayId: 5,
     name: "Fergusson Falls",
-    distanceKm: 2.0,
-    ascentM: 50,
-    descentM: 50,
-    timeHoursMin: 0.75,
-    timeHoursMax: 1.5,
-    description: "Beautiful waterfall detour, often combined with D'Alton Falls.",
-    difficulty: "Easy",
+    distanceKm: 1.0,
+    ascentM: 70,
+    descentM: 70,
+    timeHoursMin: 1,
+    timeHoursMax: 1,
+    description: "Official walk notes group this with D'Alton Falls as a shared short detour from the Overland Track.",
+    difficulty: "Moderate",
     waypointId: "fergusson-falls",
+    junctionLat: -41.9096278,
+    junctionLng: 146.1195429,
     elevationProfile: [
       { distance: 0, elevation: 900 },
-      { distance: 1, elevation: 850 },
-      { distance: 2, elevation: 900 }
+      { distance: 0.5, elevation: 830 },
+      { distance: 1, elevation: 900 }
     ]
   },
   {
     id: "dalton-falls",
     dayId: 5,
     name: "D'Alton Falls",
-    distanceKm: 2.5,
-    ascentM: 80,
-    descentM: 80,
+    distanceKm: 1.0,
+    ascentM: 70,
+    descentM: 70,
     timeHoursMin: 1,
-    timeHoursMax: 1.5,
-    description: "Impressive waterfall, can be combined with Fergusson Falls loop.",
-    difficulty: "Easy",
+    timeHoursMax: 1,
+    description: "Official walk notes group this with Fergusson Falls as a shared 1 km return side trip.",
+    difficulty: "Moderate",
     waypointId: "dalton-falls",
+    junctionLat: -41.9096278,
+    junctionLng: 146.1195429,
     elevationProfile: [
       { distance: 0, elevation: 900 },
-      { distance: 0.8, elevation: 850 },
-      { distance: 1.25, elevation: 820 },
-      { distance: 1.7, elevation: 860 },
-      { distance: 2.5, elevation: 900 }
+      { distance: 0.35, elevation: 850 },
+      { distance: 0.5, elevation: 820 },
+      { distance: 0.7, elevation: 860 },
+      { distance: 1, elevation: 900 }
     ]
   },
   {
     id: "hartnett-falls",
     dayId: 5,
     name: "Hartnett Falls",
-    distanceKm: 3.0,
-    ascentM: 100,
-    descentM: 100,
+    distanceKm: 1.5,
+    ascentM: 60,
+    descentM: 60,
     timeHoursMin: 1,
-    timeHoursMax: 2,
-    description: "Scenic waterfall requiring a slightly longer detour.",
-    difficulty: "Easy",
+    timeHoursMax: 1,
+    description: "Popular short detour to a dramatic Mersey River gorge waterfall with slippery sections near the lookout.",
+    difficulty: "Moderate",
     waypointId: "hartnett-falls",
+    junctionLat: -41.9177995,
+    junctionLng: 146.1246708,
     elevationProfile: [
       { distance: 0, elevation: 880 },
-      { distance: 1, elevation: 820 },
-      { distance: 1.5, elevation: 780 },
-      { distance: 2, elevation: 830 },
-      { distance: 3, elevation: 880 }
+      { distance: 0.5, elevation: 820 },
+      { distance: 0.75, elevation: 780 },
+      { distance: 1, elevation: 830 },
+      { distance: 1.5, elevation: 880 }
     ]
   }
 ]
@@ -405,26 +420,3 @@ export const elevationProfiles: Record<number, { distance: number; elevation: nu
     { distance: 17.5, elevation: 740 }
   ]
 }
-
-// GeoJSON-style polyline for the main track (simplified for performance)
-export const trackCoordinates: [number, number][] = [
-  [145.94912, -41.63596], // Ronny Creek
-  [145.94647, -41.66], 
-  [145.945, -41.68],
-  [145.94647, -41.71442], // Waterfall Valley
-  [145.95, -41.74],
-  [145.95645, -41.77153], // Windermere
-  [145.98, -41.79],
-  [146.01, -41.81],
-  [146.0463161, -41.8294281], // New Pelion
-  [146.06, -41.85],
-  [146.0819023, -41.8915626], // Kia Ora
-  [146.085, -41.91],
-  [146.0893035, -41.9320372], // Bert Nichols
-  [146.095, -41.96],
-  [146.1017329, -42.0123791], // Narcissus
-  [146.12, -42.04],
-  [146.14, -42.07],
-  [146.16, -42.10],
-  [146.1742892, -42.1163706], // Cynthia Bay
-]

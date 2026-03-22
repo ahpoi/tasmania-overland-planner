@@ -2,53 +2,10 @@
 
 import { useEffect, useRef, useMemo, useState } from "react"
 import { useTrip } from "@/lib/trip-context"
-import { waypoints, days, trackCoordinates, sideTrips } from "@/lib/overland-data"
+import { waypoints, days, sideTrips } from "@/lib/overland-data"
+import { getDayTrackPath, getFullTrackPath } from "@/lib/main-track-map-data"
+import { buildSideTripPath } from "@/lib/side-trip-map-data"
 import { cn } from "@/lib/utils"
-
-// Side trip approximate paths (simplified coordinates)
-const sideTripPaths: Record<string, [number, number][]> = {
-  "cradle-summit": [
-    [-41.66, 145.945],
-    [-41.662, 145.943],
-    [-41.6644, 145.9422],
-  ],
-  "barn-bluff": [
-    [-41.68, 145.946],
-    [-41.684, 145.944],
-    [-41.6867, 145.9433],
-  ],
-  "mt-ossa": [
-    [-41.8294, 146.046],
-    [-41.85, 146.04],
-    [-41.86, 146.035],
-    [-41.87061, 146.03298],
-  ],
-  "pelion-east": [
-    [-41.8294, 146.046],
-    [-41.835, 146.055],
-    [-41.84, 146.06],
-  ],
-  "mt-oakleigh": [
-    [-41.8294, 146.046],
-    [-41.825, 146.065],
-    [-41.82, 146.08],
-  ],
-  "fergusson-falls": [
-    [-41.8916, 146.082],
-    [-41.9, 146.083],
-    [-41.905, 146.085],
-  ],
-  "dalton-falls": [
-    [-41.8916, 146.082],
-    [-41.902, 146.085],
-    [-41.908, 146.088],
-  ],
-  "hartnett-falls": [
-    [-41.8916, 146.082],
-    [-41.905, 146.087],
-    [-41.91, 146.09],
-  ],
-}
 
 export function TrackMap({ className, immersive = false }: { className?: string; immersive?: boolean }) {
   const mapRef = useRef<HTMLDivElement>(null)
@@ -72,20 +29,6 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     import("leaflet/dist/leaflet.css")
   }, [])
 
-  // Calculate the segment indices for each day
-  const daySegments = useMemo(() => {
-    const segments: Record<number, { start: number; end: number }> = {
-      1: { start: 0, end: 3 },
-      2: { start: 3, end: 5 },
-      3: { start: 5, end: 8 },
-      4: { start: 8, end: 10 },
-      5: { start: 10, end: 12 },
-      6: { start: 12, end: 14 },
-      7: { start: 14, end: 18 },
-    }
-    return segments
-  }, [])
-
   // Get waypoints for current day
   const currentDayWaypoints = useMemo(() => {
     const day = days.find((d) => d.id === selectedDay)
@@ -102,6 +45,15 @@ export function TrackMap({ className, immersive = false }: { className?: string;
       .map((st) => st.waypointId)
       .filter(Boolean) as string[]
   }, [selectedSideTrips])
+
+  const fullTrackPath = useMemo(() => getFullTrackPath(exitMethod), [exitMethod])
+  const selectedDayPath = useMemo(() => {
+    if (selectedDay > (exitMethod === "ferry" ? 6 : 7)) {
+      return null
+    }
+
+    return getDayTrackPath(selectedDay)
+  }, [exitMethod, selectedDay])
 
   // Custom icon creator
   const createCustomIcon = useMemo(() => {
@@ -154,8 +106,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     }).addTo(map)
 
     // Add main track polyline
-    const coords = trackCoordinates.map(([lng, lat]) => [lat, lng] as [number, number])
-    polylineRef.current = leafletModule.polyline(coords, {
+    polylineRef.current = leafletModule.polyline(fullTrackPath, {
       color: "#666",
       weight: 3,
       opacity: 0.5,
@@ -170,6 +121,13 @@ export function TrackMap({ className, immersive = false }: { className?: string;
       mapInstanceRef.current = null
     }
   }, [leafletModule])
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !leafletModule || !polylineRef.current) return
+
+    polylineRef.current.setLatLngs(fullTrackPath)
+    mapInstanceRef.current.fitBounds(polylineRef.current.getBounds(), { padding: [20, 20] })
+  }, [leafletModule, fullTrackPath])
 
   // Update markers when waypoints or selected day/side trips change
   useEffect(() => {
@@ -218,13 +176,8 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     sideTripLinesRef.current = []
 
     // Add new highlight for selected day
-    const segment = daySegments[selectedDay]
-    if (segment && selectedDay <= (exitMethod === "ferry" ? 6 : 7)) {
-      const segmentCoords = trackCoordinates
-        .slice(segment.start, segment.end + 1)
-        .map(([lng, lat]) => [lat, lng] as [number, number])
-
-      dayHighlightRef.current = leafletModule.polyline(segmentCoords, {
+    if (selectedDayPath) {
+      dayHighlightRef.current = leafletModule.polyline(selectedDayPath, {
         color: "#2d6a4f",
         weight: 5,
         opacity: 1,
@@ -233,7 +186,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
 
     // Add side trip paths for selected side trips
     selectedSideTrips.forEach((sideTripId) => {
-      const path = sideTripPaths[sideTripId]
+      const path = buildSideTripPath(sideTripId)
       if (path && mapInstanceRef.current) {
         const sideTrip = sideTrips.find((st) => st.id === sideTripId)
         const line = leafletModule.polyline(path, {
@@ -253,7 +206,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
         sideTripLinesRef.current.push(line)
       }
     })
-  }, [selectedDay, daySegments, exitMethod, selectedSideTrips, leafletModule])
+  }, [selectedDayPath, selectedSideTrips, leafletModule])
 
   if (!isClient) {
     return (
