@@ -1,6 +1,5 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -33,16 +32,24 @@ export function DayCard({ dayId }: { dayId: number }) {
   }
 
   return (
-    <Card
+    <section
+      data-testid={`day-panel-${dayId}`}
       className={cn(
-        "cursor-pointer transition-all duration-200 border-2",
+        "relative cursor-pointer rounded-[24px] border border-border/70 transition-colors duration-200",
         isSelected
-          ? "border-primary shadow-lg"
-          : "border-transparent hover:border-primary/30 hover:shadow-md"
+          ? "bg-white/90 shadow-[0_14px_30px_-26px_rgba(15,23,42,0.6)]"
+          : "bg-background/70 hover:bg-background/90"
       )}
       onClick={() => setSelectedDay(dayId)}
     >
-      <CardContent className="p-4">
+      {isSelected && (
+        <div
+          data-testid={`day-panel-${dayId}-selection-rail`}
+          className="absolute bottom-3 left-3 top-3 w-1 rounded-full bg-primary"
+          aria-hidden="true"
+        />
+      )}
+      <div className="px-5 py-5 lg:px-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -80,7 +87,7 @@ export function DayCard({ dayId }: { dayId: number }) {
         </div>
 
         {isSelected && (
-          <div className="pt-3 border-t border-border">
+          <div className="pt-4 border-t border-border/70">
             <p className="text-sm text-muted-foreground mb-3">{day.description}</p>
             
             <div className="flex flex-wrap gap-1.5 mb-3">
@@ -98,10 +105,10 @@ export function DayCard({ dayId }: { dayId: number }) {
                   <div
                     key={st.id}
                     className={cn(
-                      "flex items-start gap-3 rounded-md p-3 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                      "flex items-start gap-3 rounded-xl border border-border/50 bg-background/70 p-3 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                       selectedSideTrips.includes(st.id)
                         ? "bg-primary/12 ring-1 ring-primary/25"
-                        : "bg-muted/30 hover:bg-muted/50"
+                        : "hover:bg-background"
                     )}
                     role="button"
                     tabIndex={0}
@@ -161,7 +168,7 @@ export function DayCard({ dayId }: { dayId: number }) {
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   )
 }

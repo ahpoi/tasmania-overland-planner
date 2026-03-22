@@ -64,11 +64,8 @@ function HikePlanner() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-                  Overland Track Planner
+                  Tasmania Overland Track Planner
                 </h1>
-                <p className="text-sm text-muted-foreground">
-                  Tasmania&apos;s iconic multi-day hike
-                </p>
               </div>
             </div>
 
@@ -82,7 +79,7 @@ function HikePlanner() {
                 />
                 <Footprints className={`h-4 w-4 ${exitMethod === "walk" ? "text-primary" : "text-muted-foreground"}`} />
                 <Label htmlFor="header-exit-method" className="cursor-pointer text-sm">
-                  {exitMethod === "ferry" ? "Ferry from Narcissus" : "Walk to Cynthia Bay"}
+                  {exitMethod === "ferry" ? "Ferry" : "Walk"}
                 </Label>
               </div>
             </div>
@@ -94,15 +91,20 @@ function HikePlanner() {
       <main className="mx-auto max-w-[1600px] px-4 py-5 lg:py-6">
         <div className="grid gap-5 xl:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] 2xl:grid-cols-[minmax(380px,0.78fr)_minmax(0,1.22fr)]">
           <div className="space-y-4">
-
-            <section className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-4 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.4)] backdrop-blur-sm">
-              <div className="flex items-center justify-between">
+            <section
+              data-testid="itinerary-panel"
+              className="border-y border-border/60 bg-background/55 backdrop-blur-sm"
+            >
+              <div className="flex items-center justify-between px-5 py-4 lg:px-6">
                 <h2 className="font-semibold text-foreground">Daily Itinerary</h2>
                 <span className="text-sm text-muted-foreground">
                   Click a day for details
                 </span>
               </div>
-              <div className="space-y-3">
+              <div
+                data-testid="itinerary-list"
+                className="space-y-4 border-t border-border/60 px-3 py-4 lg:px-4"
+              >
                 {activeDays.map((day) => (
                   <DayCard key={day.id} dayId={day.id} />
                 ))}
@@ -118,7 +120,7 @@ function HikePlanner() {
               <div className="relative z-0 h-full">
                 <TrackMap immersive className="h-full" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000]">
-                  <div className="flex justify-end px-5 pb-3">
+                  <div className="flex justify-end px-4 pb-3">
                     <Button
                       type="button"
                       variant="secondary"

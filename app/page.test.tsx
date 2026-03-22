@@ -4,8 +4,11 @@ import userEvent from "@testing-library/user-event"
 import Page from "@/app/page"
 
 vi.mock("@/components/track-map", () => ({
-  TrackMap: (props: { className?: string }) => (
-    <div data-testid="track-map" data-class-name={props.className ?? ""}>
+  TrackMap: (props: { className?: string; immersive?: boolean }) => (
+    <div
+      data-testid={props.immersive ? "track-map-immersive" : "track-map"}
+      data-class-name={props.className ?? ""}
+    >
       Track Map
     </div>
   ),
@@ -24,28 +27,40 @@ vi.mock("@/components/elevation-chart", () => ({
 }))
 
 describe("planner layout", () => {
-  it("puts route exit controls and overview access in the header, keeps the map overlay toggle, and opens mobile tools in a drawer", async () => {
+  it("keeps the itinerary header while flattening the desktop surfaces and preserving the mobile map tools", async () => {
     const user = userEvent.setup()
 
     render(<Page />)
 
-    expect(screen.getByText(/Ferry from Narcissus/i)).toBeInTheDocument()
-    expect(screen.queryByText(/Trip Overview/i)).not.toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /Tasmania Overland Track Planner/i })).toBeVisible()
+    expect(screen.getByRole("switch", { name: /Ferry/i })).toBeVisible()
+    expect(screen.getByText(/Daily Itinerary/i)).toBeVisible()
+    expect(screen.getByText(/Click a day for details/i)).toBeVisible()
 
-    await user.click(screen.getByRole("button", { name: /Overview/i }))
+    const itineraryPanel = screen.getByTestId("itinerary-panel")
+    expect(itineraryPanel.className).not.toContain("rounded-[28px]")
+    expect(itineraryPanel.className).not.toContain("shadow-[")
+    expect(itineraryPanel.className).toContain("border-y")
 
-    const sheet = document.querySelector('[data-slot="sheet-content"]')
-    expect(sheet).toBeInTheDocument()
-    expect((sheet as HTMLElement).querySelector('[data-slot="sheet-title"]')).toHaveTextContent(
-      /Trip Overview/i
-    )
-    expect(within(sheet as HTMLElement).getByText(/Ferry/i)).toBeVisible()
-    await user.click(within(sheet as HTMLElement).getByRole("button", { name: /Close/i }))
+    const itineraryList = screen.getByTestId("itinerary-list")
+    expect(itineraryList.className).toContain("space-y-4")
+    expect(itineraryList.className).not.toContain("divide-y")
+
+    const dayPanel = screen.getByTestId("day-panel-1")
+    expect(dayPanel.className).toContain("rounded-[24px]")
+    expect(dayPanel.className).toContain("border")
+    expect(dayPanel.className).toContain("bg-white/90")
 
     const mapStage = screen.getByTestId("planner-map-stage")
     expect(mapStage).toBeInTheDocument()
     expect(mapStage.className).toContain("isolate")
-    expect(within(mapStage).getByTestId("track-map")).toBeVisible()
+
+    const immersiveMap = within(mapStage).getByTestId("track-map-immersive")
+    expect(immersiveMap).toBeVisible()
+    expect(immersiveMap).toHaveAttribute(
+      "data-class-name",
+      expect.stringContaining("h-full")
+    )
 
     const overlay = screen.getByTestId("planner-elevation-overlay")
     expect(overlay).toBeInTheDocument()

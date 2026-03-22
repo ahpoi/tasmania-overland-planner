@@ -14,6 +14,15 @@ describe("DayCard side trip interactions", () => {
       </TripProvider>
     )
 
+    const dayPanel = screen.getByTestId("day-panel-1")
+    expect(dayPanel.className).toContain("rounded-[24px]")
+    expect(dayPanel.className).toContain("border")
+    expect(dayPanel.className).toContain("bg-white/90")
+    const selectedRail = screen.getByTestId("day-panel-1-selection-rail")
+    expect(selectedRail.className).toContain("top-3")
+    expect(selectedRail.className).toContain("bottom-3")
+    expect(selectedRail.className).toContain("rounded-full")
+
     const checkbox = screen.getByRole("checkbox", { name: /Cradle Mountain Summit/i })
     expect(checkbox).not.toBeChecked()
 

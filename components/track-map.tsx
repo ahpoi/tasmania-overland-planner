@@ -5,7 +5,28 @@ import { useTrip } from "@/lib/trip-context"
 import { waypoints, days, sideTrips } from "@/lib/overland-data"
 import { getDayTrackPath, getFullTrackPath } from "@/lib/main-track-map-data"
 import { buildSideTripPath } from "@/lib/side-trip-map-data"
+import type { LatLngTuple } from "@/lib/side-trip-geometries"
 import { cn } from "@/lib/utils"
+
+export function getFocusedItineraryPaths(
+  selectedDayPath: LatLngTuple[] | null,
+  selectedSideTripIds: string[]
+) {
+  const focusedPaths: LatLngTuple[][] = []
+
+  if (selectedDayPath) {
+    focusedPaths.push(selectedDayPath)
+  }
+
+  selectedSideTripIds.forEach((sideTripId) => {
+    const sideTripPath = buildSideTripPath(sideTripId)
+    if (sideTripPath) {
+      focusedPaths.push(sideTripPath)
+    }
+  })
+
+  return focusedPaths
+}
 
 export function TrackMap({ className, immersive = false }: { className?: string; immersive?: boolean }) {
   const mapRef = useRef<HTMLDivElement>(null)
@@ -54,6 +75,10 @@ export function TrackMap({ className, immersive = false }: { className?: string;
 
     return getDayTrackPath(selectedDay)
   }, [exitMethod, selectedDay])
+  const focusedItineraryPaths = useMemo(
+    () => getFocusedItineraryPaths(selectedDayPath, selectedSideTrips),
+    [selectedDayPath, selectedSideTrips]
+  )
 
   // Custom icon creator
   const createCustomIcon = useMemo(() => {
@@ -126,8 +151,26 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     if (!mapInstanceRef.current || !leafletModule || !polylineRef.current) return
 
     polylineRef.current.setLatLngs(fullTrackPath)
-    mapInstanceRef.current.fitBounds(polylineRef.current.getBounds(), { padding: [20, 20] })
   }, [leafletModule, fullTrackPath])
+
+  useEffect(() => {
+    if (!mapInstanceRef.current || !leafletModule || !polylineRef.current) return
+
+    if (focusedItineraryPaths.length === 0) {
+      mapInstanceRef.current.fitBounds(polylineRef.current.getBounds(), { padding: [20, 20] })
+      return
+    }
+
+    const bounds = leafletModule.latLngBounds(focusedItineraryPaths[0])
+
+    focusedItineraryPaths.slice(1).forEach((path) => {
+      path.forEach((point) => {
+        bounds.extend(point)
+      })
+    })
+
+    mapInstanceRef.current.fitBounds(bounds, { padding: [28, 28] })
+  }, [focusedItineraryPaths, leafletModule, fullTrackPath])
 
   // Update markers when waypoints or selected day/side trips change
   useEffect(() => {
@@ -212,19 +255,19 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     return (
       <div
         className={cn(
-          "bg-card overflow-hidden shadow-sm",
-          immersive ? "h-full rounded-[28px] border border-border/60" : "rounded-lg border border-border",
+          "overflow-hidden bg-card shadow-sm",
+          immersive ? "h-full border border-border/60 border-b-0 rounded-none" : "rounded-lg border border-border",
           className
         )}
       >
-        <div className={cn("border-b border-border bg-muted/30", immersive ? "px-4 py-3" : "p-3")}>
+        <div className={cn("border-b border-border bg-background/78", immersive ? "px-4 py-2" : "p-3")}>
           <h3 className="font-semibold text-foreground">Track Map</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Loading map...</p>
         </div>
         <div
           className={cn(
             "w-full bg-muted/20 animate-pulse",
-            immersive ? "h-[420px] lg:h-[calc(100%-7.5rem)]" : "h-80 lg:h-[min(50vh,30rem)]"
+            immersive ? "h-[420px] lg:h-[calc(100%-5.25rem)]" : "h-80 lg:h-[min(50vh,30rem)]"
           )}
         />
       </div>
@@ -234,12 +277,12 @@ export function TrackMap({ className, immersive = false }: { className?: string;
   return (
     <div
       className={cn(
-        "bg-card overflow-hidden shadow-sm",
-        immersive ? "h-full rounded-[28px] border border-border/60" : "rounded-lg border border-border",
+        "overflow-hidden bg-card shadow-sm",
+        immersive ? "h-full border border-border/60 border-b-0 rounded-none" : "rounded-lg border border-border",
         className
       )}
     >
-      <div className={cn("border-b border-border bg-muted/30", immersive ? "px-4 py-3" : "p-3")}>
+      <div className={cn("border-b border-border bg-background/78", immersive ? "px-4 py-2" : "p-3")}>
         <p className="text-xs text-muted-foreground mt-0.5">
           Day {selectedDay} highlighted
           {selectedSideTrips.length > 0 && (
@@ -251,10 +294,10 @@ export function TrackMap({ className, immersive = false }: { className?: string;
         ref={mapRef}
         className={cn(
           "w-full",
-          immersive ? "h-[420px] lg:h-[calc(100%-7.5rem)]" : "h-80 lg:h-[min(50vh,30rem)]"
+          immersive ? "h-[420px] lg:h-[calc(100%-5.25rem)]" : "h-80 lg:h-[min(50vh,30rem)]"
         )}
       />
-      <div className={cn("border-t border-border bg-muted/30", immersive ? "px-4 py-3" : "p-3")}>
+      <div className={cn("border-t border-border bg-background/82", immersive ? "px-4 py-2" : "p-3")}>
         <div className="flex flex-wrap gap-3 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#e63946] border border-white shadow-sm" />
