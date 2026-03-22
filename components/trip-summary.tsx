@@ -1,41 +1,43 @@
 "use client"
 
 import { useTrip } from "@/lib/trip-context"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Calendar, Mountain, Clock, ArrowUp, ArrowDown, Ship, Footprints } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Calendar, Mountain, Clock, ArrowUp, ArrowDown } from "lucide-react"
 
-export function TripSummary() {
+export function TripSummary({ compact = true }: { compact?: boolean }) {
   const { exitMethod, setExitMethod, getTripTotals } = useTrip()
   const totals = getTripTotals()
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+    <div
+      className={cn(
+        "bg-card rounded-2xl border border-border shadow-sm",
+        compact ? "p-3 sm:p-4" : "p-4"
+      )}
+    >
+      <div
+        className={cn(
+          "flex flex-col gap-1.5",
+          compact ? "" : "sm:flex-row sm:items-center sm:justify-between"
+        )}
+      >
         <div>
           <h2 className="font-semibold text-foreground flex items-center gap-2">
-            <Mountain className="w-5 h-5 text-primary" />
+            <Mountain className={cn("text-primary", compact ? "h-4 w-4" : "w-5 h-5")} />
             Trip Overview
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className={cn("text-muted-foreground", compact ? "text-xs sm:text-sm" : "text-sm")}>
             Cradle Mountain to Lake St Clair
           </p>
         </div>
-        <div className="flex items-center gap-3 bg-muted/50 rounded-lg px-3 py-2">
-          <Ship className={`w-4 h-4 ${exitMethod === "ferry" ? "text-primary" : "text-muted-foreground"}`} />
-          <Switch
-            id="exit-method"
-            checked={exitMethod === "walk"}
-            onCheckedChange={(checked) => setExitMethod(checked ? "walk" : "ferry")}
-          />
-          <Footprints className={`w-4 h-4 ${exitMethod === "walk" ? "text-primary" : "text-muted-foreground"}`} />
-          <Label htmlFor="exit-method" className="text-sm cursor-pointer">
-            {exitMethod === "ferry" ? "Ferry from Narcissus" : "Walk to Cynthia Bay"}
-          </Label>
-        </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div
+        className={cn(
+          "grid gap-2.5",
+          compact ? "mt-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3" : "mt-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"
+        )}
+      >
         <div className="bg-muted/40 rounded-lg p-3 text-center">
           <Calendar className="w-5 h-5 text-primary mx-auto mb-1" />
           <p className="text-2xl font-bold text-foreground">{totals.days}</p>

@@ -1,10 +1,10 @@
-# Sticky Map Layout Implementation Plan
+# Compact Sticky Map Layout Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Update the planner so desktop uses a stronger sticky right rail with map-over-elevation, mobile uses a drag-to-dismiss drawer, selected side trips are easier to toggle, and the elevation chart shows where each selected side trip branches from the day route.
+**Goal:** Update the planner so desktop uses a compact planning column with a sticky full-height map on the right, the elevation profile floats over the map, mobile keeps the drawer interaction, selected side trips are easier to toggle, and the elevation chart shows where each selected side trip branches from the day route.
 
-**Architecture:** Keep the existing page-level composition in `app/page.tsx`, but swap the mobile map container from `Sheet` to `Drawer` and tighten the desktop sticky rail sizing. Refactor the elevation chart to derive richer display data for base-route segments, branch markers, and side-trip overlays. Improve `DayCard` so the entire side-trip row toggles selection without interfering with day selection.
+**Architecture:** Recompose the desktop layout in `app/page.tsx` so the summary and itinerary live in a denser left column and the right column becomes a sticky viewport-aware map stage. Refactor `TrackMap` and `ElevationChart` so the map can fill its stage and the chart can render both as a standard card and as a compact floating overlay. Keep the pure chart-data shaping helper responsible for branch markers and side-trip overlays. Improve `DayCard` so the entire side-trip row toggles selection without interfering with day selection.
 
 **Tech Stack:** Next.js App Router, React 19, TypeScript, Tailwind CSS, Recharts, Vaul drawer, Radix checkbox
 
@@ -123,7 +123,7 @@ git add components/elevation-chart.tsx components/elevation-chart.test.tsx lib/e
 git commit -m "feat: anchor side trips in elevation chart"
 ```
 
-### Task 4: Replace the mobile sheet with a bottom drawer
+### Task 4: Keep the mobile drawer path covered by tests
 
 **Files:**
 - Modify: `/Users/ian/Workspace/multidays-hike-australia/app/page.tsx`
@@ -136,13 +136,13 @@ Add a component test or focused render test that expects the mobile control to u
 **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run app/page.test.tsx`
-Expected: FAIL because the current mobile interaction uses `Sheet`.
+Expected: FAIL if the page structure no longer exposes the mobile drawer entry point or drawer content as expected.
 
 **Step 3: Write minimal implementation**
 
-- Replace `Sheet` imports and usage with the existing `Drawer` components.
+- Preserve the existing `Drawer` usage while updating the drawer content structure if needed.
 - Keep the trigger button wording and location unless visual polish suggests a small improvement.
-- Ensure the drawer content is scrollable and stacks the map over the elevation chart.
+- Ensure the drawer content stays scrollable and stacks the map over the elevation chart.
 
 **Step 4: Run test to verify it passes**
 
@@ -156,7 +156,7 @@ git add app/page.tsx app/page.test.tsx
 git commit -m "feat: use mobile drawer for map tools"
 ```
 
-### Task 5: Tighten the desktop sticky rail layout
+### Task 5: Rebuild the desktop layout around a full-height sticky map stage
 
 **Files:**
 - Modify: `/Users/ian/Workspace/multidays-hike-australia/app/page.tsx`
@@ -165,19 +165,21 @@ git commit -m "feat: use mobile drawer for map tools"
 
 **Step 1: Write the failing test**
 
-Add a lightweight render test that expects the desktop utility rail wrapper to include the sticky container and both the map and elevation chart in the right-hand layout. If class assertions feel too implementation-specific, test for the rail’s content structure and sticky intent via accessible headings plus a wrapper test id.
+Add a lightweight render test that expects the desktop utility rail wrapper to expose a sticky map stage and a floating elevation overlay container. If class assertions feel too implementation-specific, test for structural hooks such as wrapper test ids and content grouping instead of exact utility classes.
 
 **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run app/page.test.tsx`
-Expected: FAIL because the current layout does not include the updated rail structure or sizing hooks.
+Expected: FAIL because the current layout still renders the desktop map and elevation chart as separate stacked blocks instead of a single map stage with an overlay slot.
 
 **Step 3: Write minimal implementation**
 
-- Adjust the desktop grid proportions if needed.
-- Give the sticky rail a viewport-aware height strategy.
-- Tune the map and chart container heights so both remain visible in common laptop viewports.
-- Keep the left itinerary list scroll-driven and the right rail sticky.
+- Move the trip summary into the left planning column and reduce desktop vertical chrome.
+- Adjust the desktop grid proportions to favor the right-side map stage.
+- Give the sticky map stage a viewport-aware height strategy.
+- Let `TrackMap` accept a class or mode that makes it fill the sticky stage.
+- Let `ElevationChart` accept a compact overlay mode with reduced framing and tighter copy.
+- Keep the left itinerary list scroll-driven and the right map stage sticky.
 
 **Step 4: Run test to verify it passes**
 

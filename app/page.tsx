@@ -1,12 +1,23 @@
 "use client"
 
+import { useState } from "react"
 import { TripProvider, useTrip } from "@/lib/trip-context"
 import { TripSummary } from "@/components/trip-summary"
 import { DayCard } from "@/components/day-card"
 import { ElevationChart } from "@/components/elevation-chart"
 import { TrackMap } from "@/components/track-map"
-import { Mountain, TreePine, Compass, Map } from "lucide-react"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Mountain, TreePine, Compass, Map, Ship, Footprints, PanelRightOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import {
   Drawer,
   DrawerContent,
@@ -45,100 +56,116 @@ function MobileMapDrawer() {
 }
 
 function HikePlanner() {
-  const { getActiveDays } = useTrip()
+  const { getActiveDays, exitMethod, setExitMethod } = useTrip()
   const activeDays = getActiveDays()
+  const [showDesktopElevation, setShowDesktopElevation] = useState(true)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[linear-gradient(180deg,oklch(0.985_0.007_95)_0%,oklch(0.97_0.012_90)_34%,oklch(0.985_0.005_90)_100%)]">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-              <Compass className="w-6 h-6 text-primary" />
+      <header className="sticky top-0 z-50 border-b border-border/80 bg-background/92 backdrop-blur-xl">
+        <div className="mx-auto max-w-[1600px] px-4 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                <Compass className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  Overland Track Planner
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Tasmania&apos;s iconic multi-day hike
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-                Overland Track Planner
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                Tasmania&apos;s iconic multi-day hike
-              </p>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3 rounded-full border border-border/70 bg-card/90 px-4 py-2 shadow-sm">
+                <Ship className={`h-4 w-4 ${exitMethod === "ferry" ? "text-primary" : "text-muted-foreground"}`} />
+                <Switch
+                  id="header-exit-method"
+                  checked={exitMethod === "walk"}
+                  onCheckedChange={(checked) => setExitMethod(checked ? "walk" : "ferry")}
+                />
+                <Footprints className={`h-4 w-4 ${exitMethod === "walk" ? "text-primary" : "text-muted-foreground"}`} />
+                <Label htmlFor="header-exit-method" className="cursor-pointer text-sm">
+                  {exitMethod === "ferry" ? "Ferry from Narcissus" : "Walk to Cynthia Bay"}
+                </Label>
+              </div>
+
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="rounded-full bg-card/90">
+                    <PanelRightOpen className="mr-2 h-4 w-4" />
+                    Overview
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-lg">
+                  <SheetHeader className="border-b border-border/70 pb-4">
+                    <SheetTitle>Trip Overview</SheetTitle>
+                    <SheetDescription>
+                      Review the current route totals and trip-wide settings without leaving the planner.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="overflow-y-auto p-4">
+                    <TripSummary />
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="bg-primary/5 border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 text-primary text-sm font-medium mb-2">
-                <TreePine className="w-4 h-4" />
-                Cradle Mountain-Lake St Clair National Park
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2 text-balance">
-                Plan Your Overland Track Adventure
-              </h2>
-              <p className="text-muted-foreground max-w-xl">
-                Customize your 6-7 day journey through Tasmania&apos;s wilderness. 
-                Toggle side trips, choose your exit method, and see real-time 
-                distance and elevation calculations.
-              </p>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2 bg-card rounded-lg px-4 py-2 border border-border">
-                <Mountain className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="font-semibold text-foreground">65+ km</p>
-                  <p className="text-xs text-muted-foreground">Total Distance</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 bg-card rounded-lg px-4 py-2 border border-border">
-                <Mountain className="w-5 h-5 text-accent" />
-                <div>
-                  <p className="font-semibold text-foreground">1617m</p>
-                  <p className="text-xs text-muted-foreground">Mt Ossa Peak</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Trip Summary */}
-        <div className="mb-6">
-          <TripSummary />
-        </div>
-
-        {/* Two Column Layout */}
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.95fr)]">
-          {/* Left Column - Day List */}
+      <main className="mx-auto max-w-[1600px] px-4 py-5 lg:py-6">
+        <div className="grid gap-5 xl:grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] 2xl:grid-cols-[minmax(380px,0.78fr)_minmax(0,1.22fr)]">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-foreground">Daily Itinerary</h2>
-              <span className="text-sm text-muted-foreground">
-                Click a day for details
-              </span>
-            </div>
-            <div className="space-y-3">
-              {activeDays.map((day) => (
-                <DayCard key={day.id} dayId={day.id} />
-              ))}
-            </div>
+
+            <section className="space-y-4 rounded-[28px] border border-border/70 bg-card/90 p-4 shadow-[0_20px_50px_-30px_rgba(15,23,42,0.4)] backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-foreground">Daily Itinerary</h2>
+                <span className="text-sm text-muted-foreground">
+                  Click a day for details
+                </span>
+              </div>
+              <div className="space-y-3">
+                {activeDays.map((day) => (
+                  <DayCard key={day.id} dayId={day.id} />
+                ))}
+              </div>
+            </section>
           </div>
 
-          {/* Right Column - Map and Elevation (Sticky on Desktop) */}
-          <div className="hidden lg:block">
+          <div className="relative hidden xl:block">
             <div
-              data-testid="planner-rail"
-              className="sticky top-24 space-y-4"
+              data-testid="planner-map-stage"
+              className="sticky top-24 isolate h-[calc(100vh-7.5rem)] min-h-[680px]"
             >
-              <TrackMap />
-              <ElevationChart />
+              <div className="relative z-0 h-full">
+                <TrackMap immersive className="h-full" />
+                <div className="pointer-events-none absolute inset-x-5 bottom-5 z-[1000] flex justify-end">
+                  <div className="flex max-w-[34rem] flex-col items-end gap-3">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setShowDesktopElevation((current) => !current)}
+                      className="pointer-events-auto rounded-full border border-white/70 bg-background/88 px-4 py-2 text-sm font-medium shadow-[0_18px_40px_-24px_rgba(15,23,42,0.65)] backdrop-blur-md hover:bg-background"
+                    >
+                      {showDesktopElevation ? "Hide Elevation" : "Show Elevation"}
+                    </Button>
+                    {showDesktopElevation && (
+                      <div
+                        data-testid="planner-elevation-overlay"
+                        className="pointer-events-none z-[1000] w-full"
+                      >
+                        <ElevationChart compact className="pointer-events-auto ml-auto max-w-[34rem]" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

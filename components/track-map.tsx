@@ -3,6 +3,7 @@
 import { useEffect, useRef, useMemo, useState } from "react"
 import { useTrip } from "@/lib/trip-context"
 import { waypoints, days, trackCoordinates, sideTrips } from "@/lib/overland-data"
+import { cn } from "@/lib/utils"
 
 // Side trip approximate paths (simplified coordinates)
 const sideTripPaths: Record<string, [number, number][]> = {
@@ -49,7 +50,7 @@ const sideTripPaths: Record<string, [number, number][]> = {
   ],
 }
 
-export function TrackMap() {
+export function TrackMap({ className, immersive = false }: { className?: string; immersive?: boolean }) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
   const markersRef = useRef<L.Marker[]>([])
@@ -256,20 +257,36 @@ export function TrackMap() {
 
   if (!isClient) {
     return (
-      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
-        <div className="p-3 border-b border-border bg-muted/30">
+      <div
+        className={cn(
+          "bg-card overflow-hidden shadow-sm",
+          immersive ? "h-full rounded-[28px] border border-border/60" : "rounded-lg border border-border",
+          className
+        )}
+      >
+        <div className={cn("border-b border-border bg-muted/30", immersive ? "px-4 py-3" : "p-3")}>
           <h3 className="font-semibold text-foreground">Track Map</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Loading map...</p>
         </div>
-        <div className="h-80 w-full bg-muted/20 animate-pulse lg:h-[min(50vh,30rem)]" />
+        <div
+          className={cn(
+            "w-full bg-muted/20 animate-pulse",
+            immersive ? "h-[420px] lg:h-[calc(100%-7.5rem)]" : "h-80 lg:h-[min(50vh,30rem)]"
+          )}
+        />
       </div>
     )
   }
 
   return (
-    <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
-      <div className="p-3 border-b border-border bg-muted/30">
-        <h3 className="font-semibold text-foreground">Track Map</h3>
+    <div
+      className={cn(
+        "bg-card overflow-hidden shadow-sm",
+        immersive ? "h-full rounded-[28px] border border-border/60" : "rounded-lg border border-border",
+        className
+      )}
+    >
+      <div className={cn("border-b border-border bg-muted/30", immersive ? "px-4 py-3" : "p-3")}>
         <p className="text-xs text-muted-foreground mt-0.5">
           Day {selectedDay} highlighted
           {selectedSideTrips.length > 0 && (
@@ -277,8 +294,14 @@ export function TrackMap() {
           )}
         </p>
       </div>
-      <div ref={mapRef} className="h-80 w-full lg:h-[min(50vh,30rem)]" />
-      <div className="p-3 border-t border-border bg-muted/30">
+      <div
+        ref={mapRef}
+        className={cn(
+          "w-full",
+          immersive ? "h-[420px] lg:h-[calc(100%-7.5rem)]" : "h-80 lg:h-[min(50vh,30rem)]"
+        )}
+      />
+      <div className={cn("border-t border-border bg-muted/30", immersive ? "px-4 py-3" : "p-3")}>
         <div className="flex flex-wrap gap-3 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#e63946] border border-white shadow-sm" />
