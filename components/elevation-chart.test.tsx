@@ -19,15 +19,15 @@ function ChartScenario() {
 }
 
 describe("ElevationChart", () => {
-  it("shows selected side trips as separate mini profiles below the main chart", async () => {
+  it("renders a single stitched elevation chart for selected side trips", async () => {
     render(
       <TripProvider>
         <ChartScenario />
       </TripProvider>
     )
 
-    expect(await screen.findByText(/Hartnett Falls mini profile/i)).toBeVisible()
-    expect(screen.getByText(/Orange markers show where selected side trips branch/i)).toBeVisible()
-    expect(screen.queryByText(/dashed line/i)).not.toBeInTheDocument()
+    expect(await screen.findByText(/planned route/i)).toBeVisible()
+    expect(screen.queryByText(/mini profile/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Orange markers show/i)).not.toBeInTheDocument()
   })
 })

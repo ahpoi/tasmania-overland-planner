@@ -145,8 +145,8 @@ function HikePlanner() {
             >
               <div className="relative z-0 h-full">
                 <TrackMap immersive className="h-full" />
-                <div className="pointer-events-none absolute inset-x-5 bottom-5 z-[1000] flex justify-end">
-                  <div className="flex max-w-[34rem] flex-col items-end gap-3">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000]">
+                  <div className="flex justify-end px-5 pb-3">
                     <Button
                       type="button"
                       variant="secondary"
@@ -155,15 +155,18 @@ function HikePlanner() {
                     >
                       {showDesktopElevation ? "Hide Elevation" : "Show Elevation"}
                     </Button>
-                    {showDesktopElevation && (
-                      <div
-                        data-testid="planner-elevation-overlay"
-                        className="pointer-events-none z-[1000] w-full"
-                      >
-                        <ElevationChart compact className="pointer-events-auto ml-auto max-w-[34rem]" />
-                      </div>
-                    )}
                   </div>
+                  {showDesktopElevation && (
+                    <div
+                      data-testid="planner-elevation-overlay"
+                      className="pointer-events-none z-[1000] w-full"
+                    >
+                      <ElevationChart
+                        compact
+                        className="pointer-events-auto w-full max-w-none rounded-b-none rounded-t-[28px] border-x-0 border-b-0"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

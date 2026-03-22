@@ -4,21 +4,27 @@ import { buildElevationChartData } from "@/lib/elevation-chart-data"
 import { elevationProfiles } from "@/lib/overland-data"
 
 describe("buildElevationChartData", () => {
-  it("returns the main profile and branch markers without side-trip overlays", () => {
-    const chartData = buildElevationChartData(1, ["cradle-summit"])
+  it("returns the unchanged base profile when no side trips are selected", () => {
+    const chartData = buildElevationChartData(1, [])
 
-    expect(chartData.mainProfile).toEqual(elevationProfiles[1])
-    expect(chartData.branchMarkers).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sideTripId: "cradle-summit",
-          name: "Cradle Mountain Summit",
-        }),
-      ])
-    )
-    expect(chartData.branchMarkers[0].distance).toBeLessThan(
-      elevationProfiles[1][elevationProfiles[1].length - 1].distance
-    )
-    expect("sideTripOverlays" in chartData).toBe(false)
+    expect(chartData.profile).toEqual(elevationProfiles[1])
+    expect(chartData.maxDistance).toBe(10.7)
+  })
+
+  it("stitches Barn Bluff into the Day 1 profile and extends chart distance", () => {
+    const chartData = buildElevationChartData(1, ["barn-bluff"])
+
+    expect(chartData.maxDistance).toBeCloseTo(17.7, 5)
+    expect(chartData.maxElevation).toBeGreaterThanOrEqual(1559)
+    expect(chartData.profile.at(-1)?.distance).toBeCloseTo(17.7, 5)
+  })
+
+  it("stitches multiple selected side trips in route order", () => {
+    const chartData = buildElevationChartData(1, ["barn-bluff", "cradle-summit"])
+    const summitPoint = chartData.profile.find((point) => point.elevation === 1545)
+    const bluffPoint = chartData.profile.find((point) => point.elevation === 1559)
+
+    expect(summitPoint?.distance).toBeLessThan(bluffPoint?.distance ?? Number.POSITIVE_INFINITY)
+    expect(chartData.maxDistance).toBeCloseTo(19.7, 5)
   })
 })

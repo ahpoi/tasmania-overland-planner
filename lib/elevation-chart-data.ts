@@ -5,14 +5,6 @@ export interface ElevationChartPoint {
   elevation: number
 }
 
-export interface BranchMarker {
-  sideTripId: string
-  name: string
-  distance: number
-  elevation: number
-  maxElevation: number
-}
-
 const sideTripBranchDistances: Record<string, number> = {
   "cradle-summit": 4.2,
   "barn-bluff": 5.1,
@@ -44,41 +36,113 @@ function interpolateElevationAtDistance(profile: ElevationChartPoint[], distance
   return profile[profile.length - 1].elevation
 }
 
+function hasExactDistance(profile: ElevationChartPoint[], distance: number) {
+  return profile.some((point) => point.distance === distance)
+}
+
+function sliceMainProfile(
+  profile: ElevationChartPoint[],
+  startDistance: number,
+  endDistance: number
+) {
+  if (profile.length === 0 || endDistance < startDistance) {
+    return []
+  }
+
+  const segment: ElevationChartPoint[] = []
+
+  segment.push({
+    distance: startDistance,
+    elevation: interpolateElevationAtDistance(profile, startDistance),
+  })
+
+  profile.forEach((point) => {
+    if (point.distance > startDistance && point.distance < endDistance) {
+      segment.push(point)
+    }
+  })
+
+  if (endDistance > startDistance || !hasExactDistance(profile, startDistance)) {
+    segment.push({
+      distance: endDistance,
+      elevation: interpolateElevationAtDistance(profile, endDistance),
+    })
+  }
+
+  return segment
+}
+
+function appendSegment(
+  stitched: ElevationChartPoint[],
+  segment: ElevationChartPoint[],
+  sourceStartDistance: number,
+  targetStartDistance: number
+) {
+  segment.forEach((point, index) => {
+    const mappedPoint = {
+      distance: targetStartDistance + (point.distance - sourceStartDistance),
+      elevation: point.elevation,
+    }
+
+    const previousPoint = stitched[stitched.length - 1]
+    if (
+      index === 0 &&
+      previousPoint &&
+      previousPoint.distance === mappedPoint.distance &&
+      previousPoint.elevation === mappedPoint.elevation
+    ) {
+      return
+    }
+
+    stitched.push(mappedPoint)
+  })
+}
+
 export function buildElevationChartData(selectedDay: number, selectedSideTripIds: string[]) {
   const mainProfile = elevationProfiles[selectedDay] || []
   const dayDistance = mainProfile[mainProfile.length - 1]?.distance || 0
 
-  const activeSideTrips = sideTrips.filter(
-    (sideTrip) => sideTrip.dayId === selectedDay && selectedSideTripIds.includes(sideTrip.id)
-  )
+  const activeSideTrips = sideTrips
+    .filter(
+      (sideTrip) =>
+        sideTrip.dayId === selectedDay &&
+        selectedSideTripIds.includes(sideTrip.id) &&
+        sideTrip.elevationProfile?.length
+    )
+    .sort((a, b) => {
+      const aDistance = sideTripBranchDistances[a.id] ?? dayDistance / 2
+      const bDistance = sideTripBranchDistances[b.id] ?? dayDistance / 2
+      return aDistance - bDistance
+    })
 
-  const branchMarkers: BranchMarker[] = []
+  const profile: ElevationChartPoint[] = []
+  let currentBaseDistance = 0
 
   activeSideTrips.forEach((sideTrip) => {
-    if (!sideTrip.elevationProfile?.length) {
-      return
-    }
-
     const branchDistance = Math.min(sideTripBranchDistances[sideTrip.id] ?? dayDistance / 2, dayDistance)
-    const branchElevation = interpolateElevationAtDistance(mainProfile, branchDistance)
+    const baseSegment = sliceMainProfile(mainProfile, currentBaseDistance, branchDistance)
+    const stitchedDistance = profile[profile.length - 1]?.distance ?? 0
 
-    branchMarkers.push({
-      sideTripId: sideTrip.id,
-      name: sideTrip.name,
-      distance: branchDistance,
-      elevation: branchElevation,
-      maxElevation: Math.max(...sideTrip.elevationProfile.map((point) => point.elevation)),
-    })
+    appendSegment(profile, baseSegment, currentBaseDistance, stitchedDistance)
+
+    const sideTripStartDistance = profile[profile.length - 1]?.distance ?? stitchedDistance
+    appendSegment(profile, sideTrip.elevationProfile ?? [], 0, sideTripStartDistance)
+
+    currentBaseDistance = branchDistance
   })
 
+  const remainingBaseSegment = sliceMainProfile(mainProfile, currentBaseDistance, dayDistance)
+  const remainingStartDistance = profile[profile.length - 1]?.distance ?? 0
+
+  appendSegment(profile, remainingBaseSegment, currentBaseDistance, remainingStartDistance)
+
+  const stitchedProfile = profile.length > 0 ? profile : mainProfile
+  const elevations = stitchedProfile.map((point) => point.elevation)
+
   return {
-    mainProfile,
-    branchMarkers,
-    minElevation: Math.min(...mainProfile.map((point) => point.elevation)) - 50,
-    maxElevation: Math.max(
-      ...mainProfile.map((point) => point.elevation),
-      ...branchMarkers.map((marker) => marker.maxElevation)
-    ) + 50,
-    maxDistance: dayDistance,
+    profile: stitchedProfile,
+    minElevation: Math.min(...elevations) - 50,
+    maxElevation: Math.max(...elevations) + 50,
+    maxDistance: stitchedProfile[stitchedProfile.length - 1]?.distance ?? 0,
   }
 }

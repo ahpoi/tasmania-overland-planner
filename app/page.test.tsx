@@ -53,6 +53,14 @@ describe("planner layout", () => {
     const overlayChart = within(overlay).getByTestId("elevation-chart")
     expect(overlayChart).toBeVisible()
     expect(overlayChart).toHaveAttribute("data-compact", "true")
+    expect(overlayChart).toHaveAttribute(
+      "data-class-name",
+      expect.stringContaining("w-full")
+    )
+    expect(overlayChart).toHaveAttribute(
+      "data-class-name",
+      expect.stringContaining("border-x-0")
+    )
 
     const toggle = within(mapStage).getByRole("button", { name: /Hide Elevation/i })
     await user.click(toggle)
