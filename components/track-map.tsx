@@ -1,0 +1,309 @@
+"use client"
+
+import { useEffect, useRef, useMemo, useState } from "react"
+import { useTrip } from "@/lib/trip-context"
+import { waypoints, days, trackCoordinates, sideTrips } from "@/lib/overland-data"
+
+// Side trip approximate paths (simplified coordinates)
+const sideTripPaths: Record<string, [number, number][]> = {
+  "cradle-summit": [
+    [-41.66, 145.945],
+    [-41.662, 145.943],
+    [-41.6644, 145.9422],
+  ],
+  "barn-bluff": [
+    [-41.68, 145.946],
+    [-41.684, 145.944],
+    [-41.6867, 145.9433],
+  ],
+  "mt-ossa": [
+    [-41.8294, 146.046],
+    [-41.85, 146.04],
+    [-41.86, 146.035],
+    [-41.87061, 146.03298],
+  ],
+  "pelion-east": [
+    [-41.8294, 146.046],
+    [-41.835, 146.055],
+    [-41.84, 146.06],
+  ],
+  "mt-oakleigh": [
+    [-41.8294, 146.046],
+    [-41.825, 146.065],
+    [-41.82, 146.08],
+  ],
+  "fergusson-falls": [
+    [-41.8916, 146.082],
+    [-41.9, 146.083],
+    [-41.905, 146.085],
+  ],
+  "dalton-falls": [
+    [-41.8916, 146.082],
+    [-41.902, 146.085],
+    [-41.908, 146.088],
+  ],
+  "hartnett-falls": [
+    [-41.8916, 146.082],
+    [-41.905, 146.087],
+    [-41.91, 146.09],
+  ],
+}
+
+export function TrackMap() {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<L.Map | null>(null)
+  const markersRef = useRef<L.Marker[]>([])
+  const polylineRef = useRef<L.Polyline | null>(null)
+  const dayHighlightRef = useRef<L.Polyline | null>(null)
+  const sideTripLinesRef = useRef<L.Polyline[]>([])
+  const [isClient, setIsClient] = useState(false)
+  const [leafletModule, setLeafletModule] = useState<typeof import("leaflet") | null>(null)
+
+  const { selectedDay, exitMethod, selectedSideTrips } = useTrip()
+
+  // Load Leaflet dynamically on client side only
+  useEffect(() => {
+    setIsClient(true)
+    import("leaflet").then((L) => {
+      setLeafletModule(L)
+    })
+    // Also import CSS
+    import("leaflet/dist/leaflet.css")
+  }, [])
+
+  // Calculate the segment indices for each day
+  const daySegments = useMemo(() => {
+    const segments: Record<number, { start: number; end: number }> = {
+      1: { start: 0, end: 3 },
+      2: { start: 3, end: 5 },
+      3: { start: 5, end: 8 },
+      4: { start: 8, end: 10 },
+      5: { start: 10, end: 12 },
+      6: { start: 12, end: 14 },
+      7: { start: 14, end: 18 },
+    }
+    return segments
+  }, [])
+
+  // Get waypoints for current day
+  const currentDayWaypoints = useMemo(() => {
+    const day = days.find((d) => d.id === selectedDay)
+    if (!day) return []
+    return waypoints.filter(
+      (w) => w.name.includes(day.from) || w.name.includes(day.to) || w.name === day.from || w.name === day.to
+    )
+  }, [selectedDay])
+
+  // Get selected side trip waypoint IDs
+  const selectedSideTripWaypointIds = useMemo(() => {
+    return sideTrips
+      .filter((st) => selectedSideTrips.includes(st.id))
+      .map((st) => st.waypointId)
+      .filter(Boolean) as string[]
+  }, [selectedSideTrips])
+
+  // Custom icon creator
+  const createCustomIcon = useMemo(() => {
+    if (!leafletModule) return null
+    
+    return (type: string, isActive: boolean = false, isSelectedSideTrip: boolean = false) => {
+      const colors: Record<string, string> = {
+        hut: "#2d6a4f",
+        peak: "#9d4edd",
+        waterfall: "#0077b6",
+        start: "#e63946",
+        end: "#e63946",
+        junction: "#f4a261",
+        sidetrip: "#f97316",
+      }
+      
+      const color = isSelectedSideTrip ? "#f97316" : (colors[type] || "#666")
+      const size = isActive || isSelectedSideTrip ? 14 : 10
+      
+      return leafletModule.divIcon({
+        className: "custom-marker",
+        html: `<div style="
+          width: ${size}px;
+          height: ${size}px;
+          background-color: ${color};
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          ${isActive || isSelectedSideTrip ? "transform: scale(1.3);" : ""}
+        "></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+      })
+    }
+  }, [leafletModule])
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current || !leafletModule) return
+
+    const map = leafletModule.map(mapRef.current, {
+      center: [-41.85, 146.02],
+      zoom: 10,
+      scrollWheelZoom: true,
+    })
+
+    leafletModule.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map)
+
+    // Add main track polyline
+    const coords = trackCoordinates.map(([lng, lat]) => [lat, lng] as [number, number])
+    polylineRef.current = leafletModule.polyline(coords, {
+      color: "#666",
+      weight: 3,
+      opacity: 0.5,
+    }).addTo(map)
+
+    map.fitBounds(polylineRef.current.getBounds(), { padding: [20, 20] })
+
+    mapInstanceRef.current = map
+
+    return () => {
+      map.remove()
+      mapInstanceRef.current = null
+    }
+  }, [leafletModule])
+
+  // Update markers when waypoints or selected day/side trips change
+  useEffect(() => {
+    if (!mapInstanceRef.current || !leafletModule || !createCustomIcon) return
+
+    // Clear existing markers
+    markersRef.current.forEach((marker) => marker.remove())
+    markersRef.current = []
+
+    // Add waypoint markers
+    const visibleWaypoints = exitMethod === "ferry" 
+      ? waypoints.filter(w => w.id !== "cynthia-bay")
+      : waypoints
+
+    visibleWaypoints.forEach((wp) => {
+      const isOnCurrentDay = currentDayWaypoints.some((cdw) => cdw.id === wp.id)
+      const isSelectedSideTrip = selectedSideTripWaypointIds.includes(wp.id)
+      
+      const marker = leafletModule.marker([wp.lat, wp.lng], {
+        icon: createCustomIcon(wp.type, isOnCurrentDay, isSelectedSideTrip),
+      })
+        .bindPopup(
+          `<div style="text-align: center;">
+            <strong>${wp.name}</strong>
+            ${wp.description ? `<br/><small>${wp.description}</small>` : ""}
+            ${isSelectedSideTrip ? '<br/><small style="color: #f97316; font-weight: 600;">Selected Side Trip</small>' : ""}
+          </div>`
+        )
+        .addTo(mapInstanceRef.current!)
+
+      markersRef.current.push(marker)
+    })
+  }, [currentDayWaypoints, exitMethod, selectedSideTripWaypointIds, leafletModule, createCustomIcon])
+
+  // Update day highlight and side trip lines
+  useEffect(() => {
+    if (!mapInstanceRef.current || !leafletModule) return
+
+    // Remove existing highlight
+    if (dayHighlightRef.current) {
+      dayHighlightRef.current.remove()
+    }
+
+    // Remove existing side trip lines
+    sideTripLinesRef.current.forEach((line) => line.remove())
+    sideTripLinesRef.current = []
+
+    // Add new highlight for selected day
+    const segment = daySegments[selectedDay]
+    if (segment && selectedDay <= (exitMethod === "ferry" ? 6 : 7)) {
+      const segmentCoords = trackCoordinates
+        .slice(segment.start, segment.end + 1)
+        .map(([lng, lat]) => [lat, lng] as [number, number])
+
+      dayHighlightRef.current = leafletModule.polyline(segmentCoords, {
+        color: "#2d6a4f",
+        weight: 5,
+        opacity: 1,
+      }).addTo(mapInstanceRef.current)
+    }
+
+    // Add side trip paths for selected side trips
+    selectedSideTrips.forEach((sideTripId) => {
+      const path = sideTripPaths[sideTripId]
+      if (path && mapInstanceRef.current) {
+        const sideTrip = sideTrips.find((st) => st.id === sideTripId)
+        const line = leafletModule.polyline(path, {
+          color: "#f97316",
+          weight: 4,
+          opacity: 0.9,
+          dashArray: "8, 8",
+        })
+          .bindPopup(
+            `<div style="text-align: center;">
+              <strong>${sideTrip?.name || sideTripId}</strong>
+              <br/><small>${sideTrip?.distanceKm} km return</small>
+            </div>`
+          )
+          .addTo(mapInstanceRef.current)
+        
+        sideTripLinesRef.current.push(line)
+      }
+    })
+  }, [selectedDay, daySegments, exitMethod, selectedSideTrips, leafletModule])
+
+  if (!isClient) {
+    return (
+      <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
+        <div className="p-3 border-b border-border bg-muted/30">
+          <h3 className="font-semibold text-foreground">Track Map</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Loading map...</p>
+        </div>
+        <div className="h-80 w-full bg-muted/20 animate-pulse lg:h-[min(50vh,30rem)]" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
+      <div className="p-3 border-b border-border bg-muted/30">
+        <h3 className="font-semibold text-foreground">Track Map</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Day {selectedDay} highlighted
+          {selectedSideTrips.length > 0 && (
+            <span className="text-accent"> | {selectedSideTrips.length} side trip{selectedSideTrips.length > 1 ? "s" : ""} shown</span>
+          )}
+        </p>
+      </div>
+      <div ref={mapRef} className="h-80 w-full lg:h-[min(50vh,30rem)]" />
+      <div className="p-3 border-t border-border bg-muted/30">
+        <div className="flex flex-wrap gap-3 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#e63946] border border-white shadow-sm" />
+            <span className="text-muted-foreground">Start/End</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#2d6a4f] border border-white shadow-sm" />
+            <span className="text-muted-foreground">Hut</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#9d4edd] border border-white shadow-sm" />
+            <span className="text-muted-foreground">Peak</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#0077b6] border border-white shadow-sm" />
+            <span className="text-muted-foreground">Waterfall</span>
+          </div>
+          {selectedSideTrips.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-[#f97316] border border-white shadow-sm" />
+              <span className="text-muted-foreground">Side Trip</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
