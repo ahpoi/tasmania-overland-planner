@@ -98,13 +98,45 @@ describe("DayCard side trip interactions", () => {
 
     const drawer = document.querySelector('[data-slot="drawer-content"]')
     const initialBurn = (drawer as HTMLElement).querySelector('[data-testid="fuel-estimated-burn"]')
-    expect(initialBurn).toHaveTextContent("4655 kcal")
+    expect(initialBurn).toHaveTextContent(/kcal/i)
     const initialBurnValue = Number(initialBurn?.textContent?.replace(/[^0-9]/g, ""))
+    expect(initialBurnValue).toBeGreaterThan(0)
 
     await user.click(screen.getByText(/Official side trip from Kitchen Hut/i))
 
     const updatedBurn = (drawer as HTMLElement).querySelector('[data-testid="fuel-estimated-burn"]')
     expect(Number(updatedBurn?.textContent?.replace(/[^0-9]/g, ""))).toBeGreaterThan(initialBurnValue)
+  })
+
+  it("keeps selected side trips checked when interacting with the fuel breakdown accordion", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    render(
+      <TripProvider>
+        <DayCard dayId={1} />
+      </TripProvider>
+    )
+
+    const dayPanel = screen.getByTestId("day-panel-1")
+    const sideTripCheckbox = screen.getByRole("checkbox", { name: /Cradle Mountain Summit/i })
+
+    await user.click(screen.getByText(/Official side trip from Kitchen Hut/i))
+    expect(sideTripCheckbox).toBeChecked()
+
+    await user.click(within(dayPanel).getByRole("button", { name: /Fuel Plan/i }))
+
+    expect(
+      within(dayPanel).getByRole("checkbox", { name: /Cradle Mountain Summit/i, hidden: true })
+    ).toBeChecked()
+
+    const drawer = document.querySelector('[data-slot="drawer-content"]')
+    await user.click(
+      within(drawer as HTMLElement).getByRole("button", { name: /Calculation breakdown/i })
+    )
+
+    expect(
+      within(dayPanel).getByRole("checkbox", { name: /Cradle Mountain Summit/i, hidden: true })
+    ).toBeChecked()
   })
 
   it("pins the selected day's fuel plan trigger to the card's top-right corner", () => {

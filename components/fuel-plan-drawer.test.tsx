@@ -96,9 +96,12 @@ describe("FuelPlanDrawer", () => {
       .click(within(drawer as HTMLElement).getByRole("button", { name: /Calculation breakdown/i }))
 
     expect(within(drawer as HTMLElement).getByText(/Base hiking MET/i)).toBeVisible()
+    expect(within(drawer as HTMLElement).getAllByText(/terrain multiplier/i).length).toBeGreaterThan(0)
     expect(within(drawer as HTMLElement).getAllByText(/Final MET/i).length).toBeGreaterThan(0)
     expect(
-      within(drawer as HTMLElement).getByText(/Calories burned = Final MET x body weight x hiking hours/i)
+      within(drawer as HTMLElement).getByText(
+        /Estimated burn = resting kcal\/hr x final MET x hiking hours/i
+      )
     ).toBeVisible()
     expect(
       within(drawer as HTMLElement).getByText(/Conservative pack target = estimated burn x 0.9/i)
@@ -106,6 +109,26 @@ describe("FuelPlanDrawer", () => {
     expect(
       within(drawer as HTMLElement).getAllByText(/Recommended food to pack/i).length
     ).toBeGreaterThan(0)
+  })
+
+  it("shows an approximation note for the fuel estimates", async () => {
+    useUserProfileStore.setState({
+      ...defaultUserProfile,
+      heightCm: 178,
+      weightKg: 82,
+      age: 34,
+      startingPackWeightKg: 16,
+      dailyPackReductionKg: 0.45,
+    })
+
+    renderFuelDrawerOnly()
+
+    await userEvent.setup().click(screen.getByRole("button", { name: /Fuel Plan/i }))
+
+    const drawer = document.querySelector('[data-slot="drawer-content"]')
+    expect(
+      within(drawer as HTMLElement).getByText(/these fuel and calorie numbers are approximate estimates/i)
+    ).toBeVisible()
   })
 
   it("updates the effective pack weight when the selected day changes", async () => {

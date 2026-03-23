@@ -50,6 +50,7 @@ export interface FuelPlanResult {
       ascentM: number
       descentM: number
       hikingHours: number
+      restingCaloriesPerHour: number
       ascentRateMPerHour: number
       descentRateMPerHour: number
     }
@@ -59,6 +60,7 @@ export interface FuelPlanResult {
       ascentAdjustment: number
       descentAdjustment: number
       durationAdjustment: number
+      terrainMultiplier: number
       finalMet: number
     }
     intake: {
@@ -153,6 +155,19 @@ function roundToTenth(value: number) {
   return Math.round(value * 10) / 10
 }
 
+function calculateBmr({
+  weightKg,
+  heightCm,
+  age,
+}: {
+  weightKg: number
+  heightCm: number
+  age: number
+}) {
+  // Use the Mifflin-St Jeor male default until the product collects sex explicitly.
+  return 10 * weightKg + 6.25 * heightCm - 5 * age + 5
+}
+
 export function calculateFuelPlan({
   profile,
   dayPosition,
@@ -180,35 +195,39 @@ export function calculateFuelPlan({
   const ascentRateMPerHour = totals.ascentM / averageHikingHours
   const descentRateMPerHour = totals.descentM / averageHikingHours
 
+  const restingCaloriesPerHour = calculateBmr(profile) / 24
   const baseMet = BASE_HIKING_MET
   const packAdjustment = effectivePackWeightKg * 0.06
   const ascentAdjustment = (ascentRateMPerHour / 300) * 0.7
   const descentAdjustment = (descentRateMPerHour / 400) * 0.25
   const durationAdjustment = Math.max(averageHikingHours - 4, 0) * 0.18
   const finalMet = roundToTenth(
-    baseMet +
+    (baseMet +
       packAdjustment +
       ascentAdjustment +
       descentAdjustment +
-      durationAdjustment
+      durationAdjustment) *
+      terrain.multiplier
   )
 
   const estimatedCaloriesBurned = Math.round(
-    finalMet * profile.weightKg * averageHikingHours
+    restingCaloriesPerHour * finalMet * averageHikingHours
   )
 
-  const recommendedIntakeCalories = Math.round(estimatedCaloriesBurned * INTAKE_FACTOR)
-  const proteinCalories = Math.round(recommendedIntakeCalories * 0.18)
-  const fatCalories = Math.round(recommendedIntakeCalories * 0.27)
-  const carbsCalories = recommendedIntakeCalories - proteinCalories - fatCalories
+  const intakeTargetCalories = Math.round(estimatedCaloriesBurned * INTAKE_FACTOR)
+  const proteinGrams = Math.round((intakeTargetCalories * 0.18) / 4)
+  const fatGrams = Math.round((intakeTargetCalories * 0.27) / 9)
+  const carbsGrams = Math.max(
+    Math.round((intakeTargetCalories - proteinGrams * 4 - fatGrams * 9) / 4),
+    0
+  )
 
   const macros = {
-    proteinGrams: Math.round(proteinCalories / 4),
-    carbsGrams: Math.round(carbsCalories / 4),
-    fatGrams: Math.round(fatCalories / 9),
+    proteinGrams,
+    carbsGrams,
+    fatGrams,
   }
 
-  const calorieSplit = allocateWholeValues(recommendedIntakeCalories, [0.22, 0.28, 0.27, 0.23])
   const proteinSplit = allocateWholeValues(macros.proteinGrams, [0.24, 0.27, 0.29, 0.2])
   const carbsSplit = allocateWholeValues(macros.carbsGrams, [0.2, 0.3, 0.22, 0.28])
   const fatSplit = allocateWholeValues(macros.fatGrams, [0.2, 0.22, 0.34, 0.24])
@@ -217,36 +236,38 @@ export function calculateFuelPlan({
     {
       key: "breakfast",
       label: "Breakfast",
-      calories: calorieSplit[0],
       proteinGrams: proteinSplit[0],
       carbsGrams: carbsSplit[0],
       fatGrams: fatSplit[0],
+      calories: proteinSplit[0] * 4 + carbsSplit[0] * 4 + fatSplit[0] * 9,
     },
     {
       key: "lunch",
       label: "Lunch",
-      calories: calorieSplit[1],
       proteinGrams: proteinSplit[1],
       carbsGrams: carbsSplit[1],
       fatGrams: fatSplit[1],
+      calories: proteinSplit[1] * 4 + carbsSplit[1] * 4 + fatSplit[1] * 9,
     },
     {
       key: "dinner",
       label: "Dinner",
-      calories: calorieSplit[2],
       proteinGrams: proteinSplit[2],
       carbsGrams: carbsSplit[2],
       fatGrams: fatSplit[2],
+      calories: proteinSplit[2] * 4 + carbsSplit[2] * 4 + fatSplit[2] * 9,
     },
     {
       key: "snacks",
       label: "Snacks",
-      calories: calorieSplit[3],
       proteinGrams: proteinSplit[3],
       carbsGrams: carbsSplit[3],
       fatGrams: fatSplit[3],
+      calories: proteinSplit[3] * 4 + carbsSplit[3] * 4 + fatSplit[3] * 9,
     },
   ]
+
+  const recommendedIntakeCalories = meals.reduce((sum, meal) => sum + meal.calories, 0)
 
   return {
     averageHikingHours,
@@ -269,6 +290,7 @@ export function calculateFuelPlan({
         ascentM: totals.ascentM,
         descentM: totals.descentM,
         hikingHours: averageHikingHours,
+        restingCaloriesPerHour,
         ascentRateMPerHour,
         descentRateMPerHour,
       },
@@ -278,6 +300,7 @@ export function calculateFuelPlan({
         ascentAdjustment,
         descentAdjustment,
         durationAdjustment,
+        terrainMultiplier: terrain.multiplier,
         finalMet,
       },
       intake: {

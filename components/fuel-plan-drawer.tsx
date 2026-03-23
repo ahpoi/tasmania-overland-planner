@@ -27,6 +27,10 @@ function formatKg(value: number) {
   return `${value.toFixed(1)} kg`
 }
 
+function stopEventPropagation(event: React.SyntheticEvent) {
+  event.stopPropagation()
+}
+
 export function FuelPlanDrawer({ trigger }: { trigger?: ReactNode }) {
   const { selectedDay, getDayTotals, getDayPosition } = useTrip()
   const {
@@ -82,7 +86,11 @@ export function FuelPlanDrawer({ trigger }: { trigger?: ReactNode }) {
           </Button>
         )}
       </DrawerTrigger>
-      <DrawerContent className="mx-auto w-full max-w-4xl">
+      <DrawerContent
+        className="mx-auto w-full max-w-4xl"
+        onClick={stopEventPropagation}
+        onPointerDown={stopEventPropagation}
+      >
         <DrawerHeader className="border-b border-border/70">
           <DrawerTitle className="text-xl sm:text-2xl">Selected-Day Fuel Plan</DrawerTitle>
           <DrawerDescription className="text-base sm:text-lg">
@@ -100,6 +108,12 @@ export function FuelPlanDrawer({ trigger }: { trigger?: ReactNode }) {
             </div>
           ) : (
             <>
+              <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
+                These fuel and calorie numbers are approximate estimates based on your profile,
+                selected day, and active side trips. Weather, pace, and personal needs can change
+                what you actually burn or need to carry.
+              </div>
+
               <div className="rounded-3xl border border-border/70 bg-muted/25 p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>

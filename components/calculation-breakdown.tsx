@@ -35,7 +35,7 @@ export function CalculationBreakdown({
         <AccordionContent className="space-y-4">
           <div className="rounded-2xl border border-border/70 bg-muted/30 p-3">
             <p className="text-sm text-foreground">
-              Calories burned = Final MET x body weight x hiking hours
+              Estimated burn = resting kcal/hr x final MET x hiking hours
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
               {intake.policyLabel} = estimated burn x {intake.factor}
@@ -62,6 +62,10 @@ export function CalculationBreakdown({
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">+ duration adjustment</span>
               <span>{formatNumber(components.durationAdjustment)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">x terrain multiplier</span>
+              <span>{formatNumber(components.terrainMultiplier)}</span>
             </div>
             <div className="flex items-center justify-between gap-3 font-medium">
               <span>Final MET</span>
@@ -110,6 +114,10 @@ export function CalculationBreakdown({
               <dd>+{formatNumber(components.durationAdjustment)}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Terrain multiplier</dt>
+              <dd>x{formatNumber(components.terrainMultiplier)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Final MET</dt>
               <dd>{formatNumber(components.finalMet)}</dd>
             </div>
@@ -126,6 +134,14 @@ export function CalculationBreakdown({
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Body weight</dt>
               <dd>{formatNumber(inputs.bodyWeightKg)} kg</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Height</dt>
+              <dd>{formatNumber(inputs.heightCm)} cm</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Age</dt>
+              <dd>{formatNumber(inputs.age)}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Starting pack weight</dt>
@@ -166,6 +182,10 @@ export function CalculationBreakdown({
             <div className="flex items-center justify-between gap-3">
               <dt className="text-muted-foreground">Average hiking time</dt>
               <dd>{formatNumber(inputs.hikingHours)} hr</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-muted-foreground">Resting energy</dt>
+              <dd>{formatNumber(inputs.restingCaloriesPerHour)} kcal/hr</dd>
             </div>
           </dl>
         </AccordionContent>

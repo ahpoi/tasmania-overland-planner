@@ -113,7 +113,79 @@ describe("fuel estimator", () => {
     expect(mealFat).toBe(plan.macros.fatGrams)
   })
 
-  it("uses the MET equation for estimated calories burned", () => {
+  it("lets profile height and age influence the burn estimate", () => {
+    const youngerTallerPlan = calculateFuelPlan({
+      profile: {
+        ...completeProfile,
+        heightCm: 185,
+        age: 28,
+      },
+      dayPosition: 1,
+      totals: {
+        distanceKm: 10.7,
+        ascentM: 600,
+        descentM: 200,
+        timeHoursMin: 4,
+        timeHoursMax: 6,
+      },
+    })
+
+    const olderShorterPlan = calculateFuelPlan({
+      profile: {
+        ...completeProfile,
+        heightCm: 168,
+        age: 48,
+      },
+      dayPosition: 1,
+      totals: {
+        distanceKm: 10.7,
+        ascentM: 600,
+        descentM: 200,
+        timeHoursMin: 4,
+        timeHoursMax: 6,
+      },
+    })
+
+    expect(youngerTallerPlan.estimatedCaloriesBurned).not.toBe(
+      olderShorterPlan.estimatedCaloriesBurned
+    )
+  })
+
+  it("includes the terrain multiplier in the burn breakdown", () => {
+    const plan = calculateFuelPlan({
+      profile: completeProfile,
+      dayPosition: 1,
+      totals: {
+        distanceKm: 10.7,
+        ascentM: 600,
+        descentM: 200,
+        timeHoursMin: 4,
+        timeHoursMax: 6,
+      },
+    })
+
+    expect(plan.breakdown.components.terrainMultiplier).toBeGreaterThan(1)
+  })
+
+  it("derives each meal calorie target from that meal's macros", () => {
+    const plan = calculateFuelPlan({
+      profile: completeProfile,
+      dayPosition: 1,
+      totals: {
+        distanceKm: 10.7,
+        ascentM: 600,
+        descentM: 200,
+        timeHoursMin: 4,
+        timeHoursMax: 6,
+      },
+    })
+
+    plan.meals.forEach((meal) => {
+      expect(meal.calories).toBe(meal.proteinGrams * 4 + meal.carbsGrams * 4 + meal.fatGrams * 9)
+    })
+  })
+
+  it("uses resting calories, hiking MET, and hiking hours for estimated burn", () => {
     const plan = calculateFuelPlan({
       profile: completeProfile,
       dayPosition: 2,
@@ -127,8 +199,8 @@ describe("fuel estimator", () => {
     })
 
     const expectedCalories = Math.round(
-      plan.breakdown.components.finalMet *
-        plan.breakdown.inputs.bodyWeightKg *
+      plan.breakdown.inputs.restingCaloriesPerHour *
+        plan.breakdown.components.finalMet *
         plan.breakdown.inputs.hikingHours
     )
 

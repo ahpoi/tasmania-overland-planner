@@ -55,10 +55,13 @@ function TripContextProbe() {
 }
 
 describe("planner layout", () => {
-  it("keeps the exit-method switch group content-width on mobile", () => {
+  it("keeps the itinerary exit-method switch group content-width on mobile", () => {
     render(<Page />)
 
-    const switchControl = screen.getByRole("switch", { name: /Ferry/i })
+    const itineraryHeader = screen
+      .getByRole("heading", { name: /Daily Itinerary/i })
+      .parentElement as HTMLElement
+    const switchControl = within(itineraryHeader).getByRole("switch", { name: /Ferry/i })
     const switchGroup = switchControl.parentElement
 
     expect(switchGroup).not.toBeNull()
@@ -66,10 +69,13 @@ describe("planner layout", () => {
     expect(switchGroup?.className).not.toContain("flex-1")
   })
 
-  it("lays out the mobile header controls in a wrapping row instead of a stacked column", () => {
+  it("lays out the itinerary header controls in a wrapping row instead of a stacked column", () => {
     render(<Page />)
 
-    const switchControl = screen.getByRole("switch", { name: /Ferry/i })
+    const itineraryHeader = screen
+      .getByRole("heading", { name: /Daily Itinerary/i })
+      .parentElement as HTMLElement
+    const switchControl = within(itineraryHeader).getByRole("switch", { name: /Ferry/i })
     const switchGroup = switchControl.parentElement
     const headerActions = switchGroup?.parentElement
 
@@ -85,11 +91,14 @@ describe("planner layout", () => {
     render(<Page />)
 
     expect(screen.getByRole("heading", { name: /Tasmania Overland Track Planner/i })).toBeVisible()
-    expect(screen.getByRole("switch", { name: /Ferry/i })).toBeVisible()
     expect(screen.getByRole("button", { name: /^Profile$/i })).toBeVisible()
     expect(screen.queryByRole("button", { name: /^Fuel Plan$/i })).not.toBeInTheDocument()
-    expect(screen.getByText(/Daily Itinerary/i)).toBeVisible()
-    expect(screen.getByText(/Click a day for details/i)).toBeVisible()
+    const itineraryHeader = screen
+      .getByRole("heading", { name: /Daily Itinerary/i })
+      .parentElement as HTMLElement
+    expect(itineraryHeader).toBeVisible()
+    expect(within(itineraryHeader).getByRole("switch", { name: /Ferry/i })).toBeVisible()
+    expect(screen.queryByText(/Click a day for details/i)).not.toBeInTheDocument()
 
     const itineraryPanel = screen.getByTestId("itinerary-panel")
     expect(itineraryPanel.className).not.toContain("rounded-[28px]")

@@ -74,18 +74,6 @@ function HikePlanner() {
               <div className="flex items-center gap-2">
                 <UserProfileDrawer />
               </div>
-              <div className="flex items-center gap-3 rounded-full border border-border/70 bg-card/90 px-4 py-2 shadow-sm">
-                <Ship className={`h-4 w-4 ${exitMethod === "ferry" ? "text-primary" : "text-muted-foreground"}`} />
-                <Switch
-                  id="header-exit-method"
-                  checked={exitMethod === "walk"}
-                  onCheckedChange={(checked) => setExitMethod(checked ? "walk" : "ferry")}
-                />
-                <Footprints className={`h-4 w-4 ${exitMethod === "walk" ? "text-primary" : "text-muted-foreground"}`} />
-                <Label htmlFor="header-exit-method" className="cursor-pointer text-sm">
-                  {exitMethod === "ferry" ? "Ferry" : "Walk"}
-                </Label>
-              </div>
             </div>
           </div>
         </div>
@@ -99,11 +87,20 @@ function HikePlanner() {
               data-testid="itinerary-panel"
               className="border-y border-border/60 bg-background/55 backdrop-blur-sm"
             >
-              <div className="flex items-center justify-between px-5 py-4 lg:px-6">
+              <div className="flex flex-row flex-wrap items-center justify-between gap-3 px-5 py-4 lg:px-6">
                 <h2 className="font-semibold text-foreground">Daily Itinerary</h2>
-                <span className="text-sm text-muted-foreground">
-                  Click a day for details
-                </span>
+                <div className="flex items-center gap-3 rounded-full border border-border/70 bg-card/90 px-4 py-2 shadow-sm">
+                  <Ship className={`h-4 w-4 ${exitMethod === "ferry" ? "text-primary" : "text-muted-foreground"}`} />
+                  <Switch
+                    id="itinerary-exit-method"
+                    checked={exitMethod === "walk"}
+                    onCheckedChange={(checked) => setExitMethod(checked ? "walk" : "ferry")}
+                  />
+                  <Footprints className={`h-4 w-4 ${exitMethod === "walk" ? "text-primary" : "text-muted-foreground"}`} />
+                  <Label htmlFor="itinerary-exit-method" className="cursor-pointer text-sm">
+                    {exitMethod === "ferry" ? "Ferry" : "Walk"}
+                  </Label>
+                </div>
               </div>
               <div
                 data-testid="itinerary-list"
