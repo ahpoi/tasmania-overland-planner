@@ -1,11 +1,14 @@
 "use client"
 
+import { FuelPlanDrawer } from "@/components/fuel-plan-drawer"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { useTrip } from "@/lib/trip-context"
+import { useUserProfileStore } from "@/lib/user-profile-store"
 import { days } from "@/lib/overland-data"
-import { Clock, Mountain, ArrowDown, ArrowUp, MapPin, ChevronRight } from "lucide-react"
+import { Clock, Mountain, ArrowDown, ArrowUp, MapPin, ChevronRight, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function DayCard({ dayId }: { dayId: number }) {
@@ -17,6 +20,11 @@ export function DayCard({ dayId }: { dayId: number }) {
     getDayTotals,
     getDaySideTrips,
   } = useTrip()
+  const heightCm = useUserProfileStore((state) => state.heightCm)
+  const weightKg = useUserProfileStore((state) => state.weightKg)
+  const age = useUserProfileStore((state) => state.age)
+  const startingPackWeightKg = useUserProfileStore((state) => state.startingPackWeightKg)
+  const dailyPackReductionKg = useUserProfileStore((state) => state.dailyPackReductionKg)
 
   const day = days.find((d) => d.id === dayId)
   if (!day) return null
@@ -24,6 +32,9 @@ export function DayCard({ dayId }: { dayId: number }) {
   const totals = getDayTotals(dayId)
   const sideTripOptions = getDaySideTrips(dayId)
   const isSelected = selectedDay === dayId
+  const profileReady = [heightCm, weightKg, age, startingPackWeightKg, dailyPackReductionKg].every(
+    (value) => value > 0
+  )
 
   const difficultyColor = {
     Easy: "bg-emerald-100 text-emerald-800",
@@ -50,8 +61,28 @@ export function DayCard({ dayId }: { dayId: number }) {
         />
       )}
       <div className="px-5 py-5 lg:px-6">
+        {isSelected && profileReady && (
+          <div className="absolute right-5 top-5 z-10 lg:right-6">
+            <FuelPlanDrawer
+              trigger={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  aria-label="Fuel Plan"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <UtensilsCrossed className="h-4 w-4" />
+                  Fuel Plan
+                </Button>
+              }
+            />
+          </div>
+        )}
+
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
+          <div className={cn("min-w-0 flex-1", isSelected && profileReady && "pr-32 sm:pr-40")}>
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-foreground">{day.name}</span>
               <Badge variant="secondary" className={cn("text-xs", difficultyColor[day.difficulty])}>
@@ -89,7 +120,7 @@ export function DayCard({ dayId }: { dayId: number }) {
         {isSelected && (
           <div className="pt-4 border-t border-border/70">
             <p className="text-sm text-muted-foreground mb-3">{day.description}</p>
-            
+
             <div className="flex flex-wrap gap-1.5 mb-3">
               {day.highlights.map((h) => (
                 <Badge key={h} variant="outline" className="text-xs font-normal">

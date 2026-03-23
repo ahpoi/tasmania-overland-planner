@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
 import Page from "@/app/page"
+import { TripProvider, useTrip } from "@/lib/trip-context"
 
 vi.mock("@/components/track-map", () => ({
   TrackMap: (props: { className?: string; immersive?: boolean }) => (
@@ -26,7 +27,58 @@ vi.mock("@/components/elevation-chart", () => ({
   ),
 }))
 
+function TripContextProbe() {
+  const {
+    getActiveDays,
+    selectedDay,
+    setSelectedDay,
+    getDayPosition,
+    setExitMethod,
+  } = useTrip()
+
+  return (
+    <div>
+      <span data-testid="active-day-count">{getActiveDays().length}</span>
+      <span data-testid="selected-day">{selectedDay}</span>
+      <span data-testid="selected-day-position">{getDayPosition(selectedDay)}</span>
+      <button type="button" onClick={() => setSelectedDay(6)}>
+        Select Day 6
+      </button>
+      <button type="button" onClick={() => setSelectedDay(7)}>
+        Select Day 7
+      </button>
+      <button type="button" onClick={() => setExitMethod("walk")}>
+        Walk Mode
+      </button>
+    </div>
+  )
+}
+
 describe("planner layout", () => {
+  it("keeps the exit-method switch group content-width on mobile", () => {
+    render(<Page />)
+
+    const switchControl = screen.getByRole("switch", { name: /Ferry/i })
+    const switchGroup = switchControl.parentElement
+
+    expect(switchGroup).not.toBeNull()
+    expect(switchGroup?.className).not.toContain("w-full")
+    expect(switchGroup?.className).not.toContain("flex-1")
+  })
+
+  it("lays out the mobile header controls in a wrapping row instead of a stacked column", () => {
+    render(<Page />)
+
+    const switchControl = screen.getByRole("switch", { name: /Ferry/i })
+    const switchGroup = switchControl.parentElement
+    const headerActions = switchGroup?.parentElement
+
+    expect(headerActions).not.toBeNull()
+    expect(headerActions?.className).toContain("flex-row")
+    expect(headerActions?.className).toContain("flex-wrap")
+    expect(headerActions?.className).not.toContain("flex-col")
+  })
+
   it("keeps the itinerary header while flattening the desktop surfaces and preserving the mobile map tools", async () => {
     const user = userEvent.setup()
 
@@ -34,6 +86,8 @@ describe("planner layout", () => {
 
     expect(screen.getByRole("heading", { name: /Tasmania Overland Track Planner/i })).toBeVisible()
     expect(screen.getByRole("switch", { name: /Ferry/i })).toBeVisible()
+    expect(screen.getByRole("button", { name: /^Profile$/i })).toBeVisible()
+    expect(screen.queryByRole("button", { name: /^Fuel Plan$/i })).not.toBeInTheDocument()
     expect(screen.getByText(/Daily Itinerary/i)).toBeVisible()
     expect(screen.getByText(/Click a day for details/i)).toBeVisible()
 
@@ -50,6 +104,7 @@ describe("planner layout", () => {
     expect(dayPanel.className).toContain("rounded-[24px]")
     expect(dayPanel.className).toContain("border")
     expect(dayPanel.className).toContain("bg-white/90")
+    expect(within(dayPanel).queryByRole("button", { name: /^Fuel Plan$/i })).not.toBeInTheDocument()
 
     const mapStage = screen.getByTestId("planner-map-stage")
     expect(mapStage).toBeInTheDocument()
@@ -97,5 +152,33 @@ describe("planner layout", () => {
       "data-compact",
       "false"
     )
+  })
+
+  it("tracks the selected day position against the active itinerary", async () => {
+    const user = userEvent.setup()
+
+    render(
+      <TripProvider>
+        <TripContextProbe />
+      </TripProvider>
+    )
+
+    expect(screen.getByTestId("active-day-count")).toHaveTextContent("6")
+    expect(screen.getByTestId("selected-day")).toHaveTextContent("1")
+    expect(screen.getByTestId("selected-day-position")).toHaveTextContent("1")
+
+    await user.click(screen.getByRole("button", { name: /Select Day 6/i }))
+
+    expect(screen.getByTestId("selected-day")).toHaveTextContent("6")
+    expect(screen.getByTestId("selected-day-position")).toHaveTextContent("6")
+
+    await user.click(screen.getByRole("button", { name: /Walk Mode/i }))
+
+    expect(screen.getByTestId("active-day-count")).toHaveTextContent("7")
+
+    await user.click(screen.getByRole("button", { name: /Select Day 7/i }))
+
+    expect(screen.getByTestId("selected-day")).toHaveTextContent("7")
+    expect(screen.getByTestId("selected-day-position")).toHaveTextContent("7")
   })
 })

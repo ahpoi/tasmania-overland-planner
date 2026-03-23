@@ -27,6 +27,7 @@ interface TripContextType {
   }
   getActiveDays: () => DaySegment[]
   getDaySideTrips: (dayId: number) => SideTrip[]
+  getDayPosition: (dayId: number) => number
 }
 
 const TripContext = createContext<TripContextType | undefined>(undefined)
@@ -36,9 +37,22 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const [selectedDay, setSelectedDay] = useState(1)
   const [selectedSideTrips, setSelectedSideTrips] = useState<string[]>([])
 
+  const getActiveDays = () => {
+    return exitMethod === "ferry" ? days.filter((d) => d.id <= 6) : days
+  }
+
   const handleSelectedDayChange = (day: number) => {
     setSelectedDay(day)
     setSelectedSideTrips([])
+  }
+
+  const handleExitMethodChange = (method: "ferry" | "walk") => {
+    setExitMethod(method)
+
+    if (method === "ferry" && selectedDay === 7) {
+      setSelectedDay(6)
+      setSelectedSideTrips([])
+    }
   }
 
   const toggleSideTrip = (id: string) => {
@@ -47,12 +61,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  const getActiveDays = () => {
-    return exitMethod === "ferry" ? days.filter((d) => d.id <= 6) : days
-  }
-
   const getDaySideTrips = (dayId: number) => {
     return sideTrips.filter((st) => st.dayId === dayId)
+  }
+
+  const getDayPosition = (dayId: number) => {
+    const dayIndex = getActiveDays().findIndex((day) => day.id === dayId)
+    return dayIndex >= 0 ? dayIndex + 1 : 0
   }
 
   const getDayTotals = (dayId: number) => {
@@ -113,7 +128,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     <TripContext.Provider
       value={{
         exitMethod,
-        setExitMethod,
+        setExitMethod: handleExitMethodChange,
         selectedDay,
         setSelectedDay: handleSelectedDayChange,
         selectedSideTrips,
@@ -122,6 +137,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         getTripTotals,
         getActiveDays,
         getDaySideTrips,
+        getDayPosition,
       }}
     >
       {children}

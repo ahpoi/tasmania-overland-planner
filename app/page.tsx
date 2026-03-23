@@ -9,6 +9,7 @@ import {Label} from "@/components/ui/label"
 import {Switch} from "@/components/ui/switch"
 import {Compass, Footprints, Map, Ship} from "lucide-react"
 import {Button} from "@/components/ui/button"
+import { UserProfileDrawer } from "@/components/user-profile-drawer"
 
 import {
   Drawer,
@@ -69,7 +70,10 @@ function HikePlanner() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-row flex-wrap items-center gap-3 sm:justify-end">
+              <div className="flex items-center gap-2">
+                <UserProfileDrawer />
+              </div>
               <div className="flex items-center gap-3 rounded-full border border-border/70 bg-card/90 px-4 py-2 shadow-sm">
                 <Ship className={`h-4 w-4 ${exitMethod === "ferry" ? "text-primary" : "text-muted-foreground"}`} />
                 <Switch
