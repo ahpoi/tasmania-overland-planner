@@ -93,6 +93,24 @@ describe("planner layout", () => {
     expect(headerActions?.className).not.toContain("flex-col")
   })
 
+  it("keeps the profile trigger beside the planner title in the mobile header row", () => {
+    render(<Page />)
+
+    const title = screen.getByRole("heading", { name: /Tasmania Overland Track Planner/i })
+    const profileButton = screen.getByRole("button", { name: /^Profile$/i })
+    const titleBlock = title.closest("div")?.parentElement
+    const actionBlock = profileButton.parentElement?.parentElement
+    const headerRow = titleBlock?.parentElement
+
+    expect(headerRow).not.toBeNull()
+    expect(titleBlock).not.toBeNull()
+    expect(actionBlock).not.toBeNull()
+    expect(headerRow).toContainElement(titleBlock)
+    expect(headerRow).toContainElement(actionBlock)
+    expect(headerRow?.className).toContain("flex-row")
+    expect(headerRow?.className).not.toContain("flex-col")
+  })
+
   it("keeps the itinerary header while flattening the desktop surfaces and preserving the mobile map tools", async () => {
     const user = userEvent.setup()
 

@@ -58,20 +58,20 @@ function HikePlanner() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/80 bg-background/92 backdrop-blur-xl">
         <div className="mx-auto max-w-[1600px] px-4 py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-row items-start justify-between gap-3 lg:items-center">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
                 <Compass className="w-6 h-6 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-md font-bold text-foreground flex items-center gap-2">
                   Tasmania Overland Track Planner
                 </h1>
               </div>
             </div>
 
-            <div className="flex flex-row flex-wrap items-center gap-3 sm:justify-end">
-              <div className="flex items-center gap-2">
+            <div className="flex shrink-0 flex-row items-center gap-3 sm:justify-end">
+              <div className="flex shrink-0 items-center gap-2">
                 <UserProfileDrawer />
               </div>
             </div>

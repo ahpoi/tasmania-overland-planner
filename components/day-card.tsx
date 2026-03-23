@@ -53,13 +53,6 @@ export function DayCard({ dayId }: { dayId: number }) {
       )}
       onClick={() => setSelectedDay(dayId)}
     >
-      {isSelected && (
-        <div
-          data-testid={`day-panel-${dayId}-selection-rail`}
-          className="absolute bottom-3 left-3 top-3 w-1 rounded-full bg-primary"
-          aria-hidden="true"
-        />
-      )}
       <div className="px-5 py-5 lg:px-6">
         {isSelected && profileReady && (
           <div className="absolute right-5 top-5 z-10 lg:right-6">
