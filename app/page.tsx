@@ -1,7 +1,7 @@
 "use client"
 
 import {useState} from "react"
-import {TripProvider, useTrip} from "@/lib/trip-context"
+import { useTripStore } from "@/lib/trip-store"
 import {DayCard} from "@/components/day-card"
 import {ElevationChart} from "@/components/elevation-chart"
 import {TrackMap} from "@/components/track-map"
@@ -49,7 +49,7 @@ function MobileMapDrawer() {
 }
 
 function HikePlanner() {
-  const { getActiveDays, exitMethod, setExitMethod } = useTrip()
+  const { getActiveDays, exitMethod, setExitMethod } = useTripStore()
   const activeDays = getActiveDays()
   const [showDesktopElevation, setShowDesktopElevation] = useState(true)
 
@@ -64,7 +64,7 @@ function HikePlanner() {
                 <Compass className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <h1 className="text-md font-bold text-foreground flex items-center gap-2">
                   Tasmania Overland Track Planner
                 </h1>
               </div>
@@ -174,9 +174,5 @@ function HikePlanner() {
 }
 
 export default function Page() {
-  return (
-    <TripProvider>
-      <HikePlanner />
-    </TripProvider>
-  )
+  return <HikePlanner />
 }

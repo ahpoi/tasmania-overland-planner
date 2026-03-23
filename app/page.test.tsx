@@ -1,8 +1,9 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { beforeEach } from "vitest"
 
 import Page from "@/app/page"
-import { TripProvider, useTrip } from "@/lib/trip-context"
+import { defaultTripState, useTripStore } from "@/lib/trip-store"
 
 vi.mock("@/components/track-map", () => ({
   TrackMap: (props: { className?: string; immersive?: boolean }) => (
@@ -34,7 +35,7 @@ function TripContextProbe() {
     setSelectedDay,
     getDayPosition,
     setExitMethod,
-  } = useTrip()
+  } = useTripStore()
 
   return (
     <div>
@@ -55,6 +56,13 @@ function TripContextProbe() {
 }
 
 describe("planner layout", () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useTripStore.setState({
+      ...defaultTripState,
+    })
+  })
+
   it("keeps the itinerary exit-method switch group content-width on mobile", () => {
     render(<Page />)
 
@@ -167,9 +175,7 @@ describe("planner layout", () => {
     const user = userEvent.setup()
 
     render(
-      <TripProvider>
-        <TripContextProbe />
-      </TripProvider>
+      <TripContextProbe />
     )
 
     expect(screen.getByTestId("active-day-count")).toHaveTextContent("6")

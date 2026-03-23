@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { useTrip } from "@/lib/trip-context"
+import { useTripStore } from "@/lib/trip-store"
 import { days, sideTrips } from "@/lib/overland-data"
 import { buildElevationChartData } from "@/lib/elevation-chart-data"
 import { cn } from "@/lib/utils"
@@ -22,7 +22,7 @@ export function ElevationChart({
   compact?: boolean
   className?: string
 }) {
-  const { selectedDay, selectedSideTrips } = useTrip()
+  const { selectedDay, selectedSideTrips } = useTripStore()
   const day = days.find((d) => d.id === selectedDay)
   const chartData = useMemo(
     () => buildElevationChartData(selectedDay, selectedSideTrips),

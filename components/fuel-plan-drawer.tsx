@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/drawer"
 import { calculateFuelPlan } from "@/lib/fuel-estimator"
 import { days } from "@/lib/overland-data"
-import { useTrip } from "@/lib/trip-context"
+import { useTripStore } from "@/lib/trip-store"
 import { useUserProfileStore } from "@/lib/user-profile-store"
 
 function isProfileComplete(values: number[]) {
@@ -32,7 +32,7 @@ function stopEventPropagation(event: React.SyntheticEvent) {
 }
 
 export function FuelPlanDrawer({ trigger }: { trigger?: ReactNode }) {
-  const { selectedDay, getDayTotals, getDayPosition } = useTrip()
+  const { selectedDay, getDayTotals, getDayPosition } = useTripStore()
   const {
     heightCm,
     weightKg,

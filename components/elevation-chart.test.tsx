@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react"
 import { render, screen } from "@testing-library/react"
+import { beforeEach } from "vitest"
 
 import { ElevationChart } from "@/components/elevation-chart"
-import { TripProvider, useTrip } from "@/lib/trip-context"
+import { defaultTripState, useTripStore } from "@/lib/trip-store"
 
 function ChartScenario() {
-  const { setSelectedDay, toggleSideTrip } = useTrip()
+  const { setSelectedDay, toggleSideTrip } = useTripStore()
   const didInitialize = useRef(false)
 
   useEffect(() => {
@@ -19,12 +20,15 @@ function ChartScenario() {
 }
 
 describe("ElevationChart", () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useTripStore.setState({
+      ...defaultTripState,
+    })
+  })
+
   it("renders a single stitched elevation chart for selected side trips", async () => {
-    render(
-      <TripProvider>
-        <ChartScenario />
-      </TripProvider>
-    )
+    render(<ChartScenario />)
 
     expect(await screen.findByText(/planned route/i)).toBeVisible()
     expect(screen.queryByText(/mini profile/i)).not.toBeInTheDocument()

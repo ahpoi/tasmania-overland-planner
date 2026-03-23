@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { useTrip } from "@/lib/trip-context"
+import { useTripStore } from "@/lib/trip-store"
 import { useUserProfileStore } from "@/lib/user-profile-store"
 import { days } from "@/lib/overland-data"
 import { Clock, Mountain, ArrowDown, ArrowUp, MapPin, ChevronRight, UtensilsCrossed } from "lucide-react"
@@ -19,7 +19,7 @@ export function DayCard({ dayId }: { dayId: number }) {
     toggleSideTrip,
     getDayTotals,
     getDaySideTrips,
-  } = useTrip()
+  } = useTripStore()
   const heightCm = useUserProfileStore((state) => state.heightCm)
   const weightKg = useUserProfileStore((state) => state.weightKg)
   const age = useUserProfileStore((state) => state.age)

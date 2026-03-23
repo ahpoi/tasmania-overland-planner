@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useMemo, useState } from "react"
-import { useTrip } from "@/lib/trip-context"
+import { useTripStore } from "@/lib/trip-store"
 import { waypoints, days, sideTrips } from "@/lib/overland-data"
 import { getDayTrackPath, getFullTrackPath } from "@/lib/main-track-map-data"
 import { buildSideTripPath } from "@/lib/side-trip-map-data"
@@ -38,7 +38,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
   const [isClient, setIsClient] = useState(false)
   const [leafletModule, setLeafletModule] = useState<typeof import("leaflet") | null>(null)
 
-  const { selectedDay, exitMethod, selectedSideTrips } = useTrip()
+  const { selectedDay, exitMethod, selectedSideTrips } = useTripStore()
 
   // Load Leaflet dynamically on client side only
   useEffect(() => {

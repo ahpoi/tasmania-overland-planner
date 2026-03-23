@@ -1,14 +1,17 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { beforeEach } from "vitest"
 
 import { DayCard } from "@/components/day-card"
-import { FuelPlanDrawer } from "@/components/fuel-plan-drawer"
-import { TripProvider } from "@/lib/trip-context"
+import { defaultTripState, useTripStore } from "@/lib/trip-store"
 import { defaultUserProfile, useUserProfileStore } from "@/lib/user-profile-store"
 
 describe("DayCard side trip interactions", () => {
   beforeEach(() => {
     localStorage.clear()
+    useTripStore.setState({
+      ...defaultTripState,
+    })
     useUserProfileStore.setState({
       ...defaultUserProfile,
       heightCm: 178,
@@ -23,9 +26,7 @@ describe("DayCard side trip interactions", () => {
     const user = userEvent.setup()
 
     render(
-      <TripProvider>
-        <DayCard dayId={1} />
-      </TripProvider>
+      <DayCard dayId={1} />
     )
 
     const dayPanel = screen.getByTestId("day-panel-1")
@@ -52,10 +53,10 @@ describe("DayCard side trip interactions", () => {
     const user = userEvent.setup()
 
     render(
-      <TripProvider>
+      <>
         <DayCard dayId={1} />
         <DayCard dayId={2} />
-      </TripProvider>
+      </>
     )
 
     const checkbox = screen.getByRole("checkbox", { name: /Cradle Mountain Summit/i })
@@ -79,10 +80,10 @@ describe("DayCard side trip interactions", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     render(
-      <TripProvider>
+      <>
         <DayCard dayId={1} />
         <DayCard dayId={2} />
-      </TripProvider>
+      </>
     )
 
     const dayOnePanel = screen.getByTestId("day-panel-1")
@@ -112,9 +113,7 @@ describe("DayCard side trip interactions", () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 })
 
     render(
-      <TripProvider>
-        <DayCard dayId={1} />
-      </TripProvider>
+      <DayCard dayId={1} />
     )
 
     const dayPanel = screen.getByTestId("day-panel-1")
@@ -141,9 +140,7 @@ describe("DayCard side trip interactions", () => {
 
   it("pins the selected day's fuel plan trigger to the card's top-right corner", () => {
     render(
-      <TripProvider>
-        <DayCard dayId={1} />
-      </TripProvider>
+      <DayCard dayId={1} />
     )
 
     const trigger = screen.getByRole("button", { name: /Fuel Plan/i })

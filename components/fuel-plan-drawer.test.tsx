@@ -3,19 +3,15 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { FuelPlanDrawer } from "@/components/fuel-plan-drawer"
-import { TripProvider, useTrip } from "@/lib/trip-context"
+import { defaultTripState, useTripStore } from "@/lib/trip-store"
 import { defaultUserProfile, useUserProfileStore } from "@/lib/user-profile-store"
 
 function renderFuelDrawerOnly() {
-  return render(
-    <TripProvider>
-      <FuelPlanDrawer />
-    </TripProvider>
-  )
+  return render(<FuelPlanDrawer />)
 }
 
 function TripDaySwitch() {
-  const { setSelectedDay } = useTrip()
+  const { setSelectedDay } = useTripStore()
 
   return (
     <button type="button" onClick={() => setSelectedDay(3)}>
@@ -26,16 +22,19 @@ function TripDaySwitch() {
 
 function renderFuelDrawerWithDaySwitch() {
   return render(
-    <TripProvider>
+    <>
       <FuelPlanDrawer />
       <TripDaySwitch />
-    </TripProvider>
+    </>
   )
 }
 
 describe("FuelPlanDrawer", () => {
   beforeEach(() => {
     localStorage.clear()
+    useTripStore.setState({
+      ...defaultTripState,
+    })
     useUserProfileStore.setState({
       ...defaultUserProfile,
     })
