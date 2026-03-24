@@ -60,7 +60,7 @@ export function DayCard({ dayId }: { dayId: number }) {
       onClick={() => setSelectedDay(dayId)}
     >
       <div className="px-5 py-5 lg:px-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             <Checkbox
               id={segmentCheckboxId}
@@ -97,21 +97,23 @@ export function DayCard({ dayId }: { dayId: number }) {
           </div>
 
           {profileReady && isSelected && (
-            <FuelPlanDrawer
-              trigger={
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  aria-label="Fuel Plan"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <UtensilsCrossed className="h-4 w-4" />
-                  Fuel Plan
-                </Button>
-              }
-            />
+            <div className="self-start sm:shrink-0">
+              <FuelPlanDrawer
+                trigger={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    aria-label="Fuel Plan"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <UtensilsCrossed className="h-4 w-4" />
+                    Fuel Plan
+                  </Button>
+                }
+              />
+            </div>
           )}
         </div>
 
@@ -191,7 +193,7 @@ export function DayCard({ dayId }: { dayId: number }) {
                     <Badge
                       variant="outline"
                       className={cn(
-                        "ml-auto text-xs",
+                        "w-full justify-center text-xs sm:ml-auto sm:w-auto",
                         sideTrip.difficulty === "Easy" && "border-emerald-300 text-emerald-700",
                         sideTrip.difficulty === "Moderate" && "border-amber-300 text-amber-700",
                         sideTrip.difficulty === "Hard" && "border-rose-300 text-rose-700",
