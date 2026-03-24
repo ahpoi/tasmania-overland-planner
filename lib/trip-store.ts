@@ -12,6 +12,7 @@ type ExitMethod = "ferry" | "walk"
 export interface TripStateValues {
   exitMethod: ExitMethod
   selectedSegmentIds: number[]
+  focusedSegmentId: number | null
   selectedDay: number
   selectedSideTrips: string[]
 }
@@ -34,6 +35,7 @@ interface TripStoreState extends TripStateValues {
   selectAllSegments: () => void
   selectEntireTrip: () => void
   clearSelections: () => void
+  setFocusedSegment: (segmentId: number | null) => void
   isSegmentSelected: (segmentId: number) => boolean
   areAllSegmentsSelected: () => boolean
   getSelectedSegments: () => DaySegment[]
@@ -49,6 +51,7 @@ interface TripStoreState extends TripStateValues {
 export const defaultTripState: TripStateValues = {
   exitMethod: "ferry",
   selectedSegmentIds: [1, 2, 3, 4, 5, 6],
+  focusedSegmentId: 1,
   selectedDay: 1,
   selectedSideTrips: [],
 }
@@ -77,15 +80,44 @@ function getSelectableSideTripIds(exitMethod: ExitMethod) {
     .map((sideTrip) => sideTrip.id)
 }
 
+function normalizeFocusedSegmentId(
+  focusedSegmentId: number | null,
+  exitMethod: ExitMethod,
+  selectedSegmentIds: number[]
+) {
+  if (focusedSegmentId === null) {
+    return selectedSegmentIds[0] ?? null
+  }
+
+  const allowedIds = new Set(getSelectableSegmentIds(exitMethod))
+
+  if (allowedIds.has(focusedSegmentId)) {
+    return focusedSegmentId
+  }
+
+  return selectedSegmentIds[0] ?? null
+}
+
 export const useTripStore = create<TripStoreState>()(
   persist(
     (set, get) => ({
       ...defaultTripState,
       setExitMethod: (method) => {
         set((state) => {
+          const normalizedSelectedSegmentIds = normalizeSelectedSegmentIds(
+            state.selectedSegmentIds,
+            method
+          )
+          const normalizedFocusedSegmentId = normalizeFocusedSegmentId(
+            state.focusedSegmentId,
+            method,
+            normalizedSelectedSegmentIds
+          )
+
           return {
             exitMethod: method,
-            selectedSegmentIds: normalizeSelectedSegmentIds(state.selectedSegmentIds, method),
+            selectedSegmentIds: normalizedSelectedSegmentIds,
+            focusedSegmentId: normalizedFocusedSegmentId,
             selectedDay: method === "ferry" && state.selectedDay === 7 ? 6 : state.selectedDay,
           }
         })
@@ -109,6 +141,13 @@ export const useTripStore = create<TripStoreState>()(
 
           return {
             selectedSegmentIds: normalizedSelectedSegmentIds,
+            focusedSegmentId: isCurrentlySelected
+              ? normalizeFocusedSegmentId(
+                  state.focusedSegmentId === segmentId ? null : state.focusedSegmentId,
+                  state.exitMethod,
+                  normalizedSelectedSegmentIds
+                )
+              : segmentId,
             selectedDay: isCurrentlySelected
               ? normalizedSelectedSegmentIds[0] ?? state.selectedDay
               : segmentId,
@@ -118,18 +157,39 @@ export const useTripStore = create<TripStoreState>()(
       selectAllSegments: () => {
         set((state) => ({
           selectedSegmentIds: getSelectableSegmentIds(state.exitMethod),
+          focusedSegmentId: normalizeFocusedSegmentId(
+            state.focusedSegmentId,
+            state.exitMethod,
+            getSelectableSegmentIds(state.exitMethod)
+          ),
         }))
       },
       selectEntireTrip: () => {
         set((state) => ({
           selectedSegmentIds: getSelectableSegmentIds(state.exitMethod),
+          focusedSegmentId: normalizeFocusedSegmentId(
+            state.focusedSegmentId,
+            state.exitMethod,
+            getSelectableSegmentIds(state.exitMethod)
+          ),
           selectedSideTrips: getSelectableSideTripIds(state.exitMethod),
         }))
       },
       clearSelections: () => {
         set(() => ({
           selectedSegmentIds: [],
+          focusedSegmentId: null,
           selectedSideTrips: [],
+        }))
+      },
+      setFocusedSegment: (segmentId) => {
+        set((state) => ({
+          focusedSegmentId: normalizeFocusedSegmentId(
+            segmentId,
+            state.exitMethod,
+            state.selectedSegmentIds
+          ),
+          selectedDay: segmentId ?? state.selectedDay,
         }))
       },
       isSegmentSelected: (segmentId) => get().selectedSegmentIds.includes(segmentId),
@@ -238,6 +298,7 @@ export const useTripStore = create<TripStoreState>()(
       partialize: (state) => ({
         exitMethod: state.exitMethod,
         selectedSegmentIds: state.selectedSegmentIds,
+        focusedSegmentId: state.focusedSegmentId,
         selectedSideTrips: state.selectedSideTrips,
       }),
     }

@@ -18,16 +18,19 @@ describe("trip store", () => {
     expect(useTripStore.getState()).toMatchObject(defaultTripState)
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
     expect(useTripStore.getState().selectedSideTrips).toEqual([])
+    expect(useTripStore.getState().focusedSegmentId).toBe(1)
   })
 
   it("toggles main track segments independently", () => {
     useTripStore.getState().toggleSegment(3)
 
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 4, 5, 6])
+    expect(useTripStore.getState().focusedSegmentId).toBe(1)
 
     useTripStore.getState().toggleSegment(3)
 
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
+    expect(useTripStore.getState().focusedSegmentId).toBe(3)
   })
 
   it("selects all segments available for the current exit method", () => {
@@ -35,21 +38,33 @@ describe("trip store", () => {
 
     expect(useTripStore.getState().selectedSegmentIds).toEqual([])
     expect(useTripStore.getState().selectedSideTrips).toEqual([])
+    expect(useTripStore.getState().focusedSegmentId).toBeNull()
 
     useTripStore.getState().selectAllSegments()
 
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
+    expect(useTripStore.getState().focusedSegmentId).toBe(1)
   })
 
   it("drops segment 7 when switching to ferry mode", () => {
     useTripStore.getState().setExitMethod("walk")
     useTripStore.getState().selectAllSegments()
+    useTripStore.getState().setFocusedSegment(7)
 
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6, 7])
+    expect(useTripStore.getState().focusedSegmentId).toBe(7)
 
     useTripStore.getState().setExitMethod("ferry")
 
     expect(useTripStore.getState().exitMethod).toBe("ferry")
+    expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
+    expect(useTripStore.getState().focusedSegmentId).toBe(1)
+  })
+
+  it("tracks focused segments independently from trip selections", () => {
+    useTripStore.getState().setFocusedSegment(4)
+
+    expect(useTripStore.getState().focusedSegmentId).toBe(4)
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
   })
 
@@ -74,6 +89,7 @@ describe("trip store", () => {
     useTripStore.getState().setExitMethod("walk")
     useTripStore.getState().selectAllSegments()
     useTripStore.getState().toggleSideTrip("mt-ossa")
+    useTripStore.getState().setFocusedSegment(4)
 
     await useTripStore.persist.rehydrate()
 
@@ -82,5 +98,6 @@ describe("trip store", () => {
     expect(storedValue).toContain("\"exitMethod\":\"walk\"")
     expect(storedValue).toContain("\"selectedSegmentIds\":[1,2,3,4,5,6,7]")
     expect(storedValue).toContain("\"selectedSideTrips\":[\"mt-ossa\"]")
+    expect(storedValue).toContain("\"focusedSegmentId\":4")
   })
 })

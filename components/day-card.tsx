@@ -13,8 +13,10 @@ import { cn } from "@/lib/utils"
 
 export function DayCard({ dayId }: { dayId: number }) {
   const {
+    focusedSegmentId,
     selectedDay,
     setSelectedDay,
+    setFocusedSegment,
     isSegmentSelected,
     toggleSegment,
     selectedSideTrips,
@@ -34,7 +36,7 @@ export function DayCard({ dayId }: { dayId: number }) {
   const totals = getDayTotals(dayId)
   const sideTripOptions = getDaySideTrips(dayId)
   const isSelected = isSegmentSelected(dayId)
-  const isFocused = selectedDay === dayId
+  const isFocused = focusedSegmentId === dayId
   const profileReady = [heightCm, weightKg, age, startingPackWeightKg, dailyPackReductionKg].every(
     (value) => value > 0
   )
@@ -57,7 +59,10 @@ export function DayCard({ dayId }: { dayId: number }) {
           : "bg-background/70",
         isFocused && "ring-2 ring-primary/20"
       )}
-      onClick={() => setSelectedDay(dayId)}
+      onClick={() => {
+        setSelectedDay(dayId)
+        setFocusedSegment(dayId)
+      }}
     >
       <div className="px-5 py-5 lg:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -80,12 +85,9 @@ export function DayCard({ dayId }: { dayId: number }) {
                 </Badge>
               </div>
 
-              <Label
-                htmlFor={segmentCheckboxId}
-                className="cursor-pointer text-base font-semibold text-foreground"
-              >
+              <div className="text-base font-semibold text-foreground">
                 {segmentLabel}
-              </Label>
+              </div>
 
               <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                 <Route className="h-3.5 w-3.5" />

@@ -38,6 +38,25 @@ describe("DayCard trip segment interactions", () => {
     expect(segmentToggle).not.toBeChecked()
   })
 
+  it("focuses the selected segment when toggling it on from the checkbox", async () => {
+    const user = userEvent.setup()
+
+    useTripStore.getState().toggleSegment(3)
+
+    render(<DayCard dayId={3} />)
+
+    const segmentToggle = screen.getByRole("checkbox", {
+      name: /Windermere Hut to New Pelion Hut/i,
+    })
+
+    expect(useTripStore.getState().focusedSegmentId).toBe(1)
+
+    await user.click(segmentToggle)
+
+    expect(segmentToggle).toBeChecked()
+    expect(useTripStore.getState().focusedSegmentId).toBe(3)
+  })
+
   it("toggles a side trip when clicking the row content outside the checkbox", async () => {
     const user = userEvent.setup()
 
@@ -61,6 +80,24 @@ describe("DayCard trip segment interactions", () => {
     const dayPanel = screen.getByTestId("day-panel-1")
 
     expect(within(dayPanel).getByRole("button", { name: /Fuel Plan/i })).toBeVisible()
+  })
+
+  it("focuses the segment when clicking the row body", async () => {
+    const user = userEvent.setup()
+
+    render(
+      <>
+        <DayCard dayId={1} />
+        <DayCard dayId={4} />
+      </>
+    )
+
+    expect(useTripStore.getState().focusedSegmentId).toBe(1)
+
+    await user.click(screen.getByText(/New Pelion Hut to Kia Ora Hut/i))
+
+    expect(useTripStore.getState().focusedSegmentId).toBe(4)
+    expect(screen.getByTestId("day-panel-4").className).toContain("ring-2")
   })
 
   it("stacks the selected segment header controls on mobile so the fuel trigger does not widen the card", () => {

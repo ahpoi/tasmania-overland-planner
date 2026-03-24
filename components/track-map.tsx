@@ -3,7 +3,7 @@
 import { useEffect, useRef, useMemo, useState } from "react"
 import { useTripStore } from "@/lib/trip-store"
 import { waypoints, days, sideTrips } from "@/lib/overland-data"
-import { getFullTrackPath, getSelectedTrackPaths } from "@/lib/main-track-map-data"
+import { getDayTrackPath, getFullTrackPath, getSelectedTrackPaths } from "@/lib/main-track-map-data"
 import { buildSideTripPath } from "@/lib/side-trip-map-data"
 import type { LatLngTuple } from "@/lib/side-trip-geometries"
 import { cn } from "@/lib/utils"
@@ -24,6 +24,39 @@ export function getSelectedTripPaths(
   return focusedPaths
 }
 
+export function getMapFocusPaths({
+  selectedTripPaths,
+  focusedSegmentId,
+  focusedSegmentPath,
+  selectedSideTripIds,
+}: {
+  selectedTripPaths: LatLngTuple[][]
+  focusedSegmentId: number | null
+  focusedSegmentPath: LatLngTuple[] | null
+  selectedSideTripIds: string[]
+}) {
+  if (!focusedSegmentId || !focusedSegmentPath) {
+    return selectedTripPaths
+  }
+
+  const focusedPaths: LatLngTuple[][] = [focusedSegmentPath]
+
+  selectedSideTripIds.forEach((sideTripId) => {
+    const sideTrip = sideTrips.find((candidate) => candidate.id === sideTripId)
+
+    if (!sideTrip || sideTrip.dayId !== focusedSegmentId) {
+      return
+    }
+
+    const sideTripPath = buildSideTripPath(sideTripId)
+    if (sideTripPath) {
+      focusedPaths.push(sideTripPath)
+    }
+  })
+
+  return focusedPaths
+}
+
 export function TrackMap({ className, immersive = false }: { className?: string; immersive?: boolean }) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
@@ -34,7 +67,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
   const [isClient, setIsClient] = useState(false)
   const [leafletModule, setLeafletModule] = useState<typeof import("leaflet") | null>(null)
 
-  const { selectedDay, selectedSegmentIds, exitMethod, selectedSideTrips } = useTripStore()
+  const { focusedSegmentId, selectedSegmentIds, exitMethod, selectedSideTrips } = useTripStore()
 
   // Load Leaflet dynamically on client side only
   useEffect(() => {
@@ -68,9 +101,23 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     () => getSelectedTrackPaths(selectedSegmentIds, exitMethod),
     [exitMethod, selectedSegmentIds]
   )
-  const focusedItineraryPaths = useMemo(
+  const selectedTripPaths = useMemo(
     () => getSelectedTripPaths(selectedTrackPaths, selectedSideTrips),
     [selectedSideTrips, selectedTrackPaths]
+  )
+  const focusedSegmentPath = useMemo(
+    () => (focusedSegmentId ? getDayTrackPath(focusedSegmentId) : null),
+    [focusedSegmentId]
+  )
+  const focusedItineraryPaths = useMemo(
+    () =>
+      getMapFocusPaths({
+        selectedTripPaths,
+        focusedSegmentId,
+        focusedSegmentPath,
+        selectedSideTripIds: selectedSideTrips,
+      }),
+    [focusedSegmentId, focusedSegmentPath, selectedSideTrips, selectedTripPaths]
   )
 
   // Custom icon creator
