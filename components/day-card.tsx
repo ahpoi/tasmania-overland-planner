@@ -8,13 +8,15 @@ import { Label } from "@/components/ui/label"
 import { useTripStore } from "@/lib/trip-store"
 import { useUserProfileStore } from "@/lib/user-profile-store"
 import { days } from "@/lib/overland-data"
-import { Clock, Mountain, ArrowDown, ArrowUp, MapPin, ChevronRight, UtensilsCrossed } from "lucide-react"
+import { Clock, Mountain, ArrowDown, ArrowUp, MapPin, ChevronRight, Route, UtensilsCrossed } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function DayCard({ dayId }: { dayId: number }) {
   const {
     selectedDay,
     setSelectedDay,
+    isSegmentSelected,
+    toggleSegment,
     selectedSideTrips,
     toggleSideTrip,
     getDayTotals,
@@ -31,10 +33,13 @@ export function DayCard({ dayId }: { dayId: number }) {
 
   const totals = getDayTotals(dayId)
   const sideTripOptions = getDaySideTrips(dayId)
-  const isSelected = selectedDay === dayId
+  const isSelected = isSegmentSelected(dayId)
+  const isFocused = selectedDay === dayId
   const profileReady = [heightCm, weightKg, age, startingPackWeightKg, dailyPackReductionKg].every(
     (value) => value > 0
   )
+  const segmentCheckboxId = `segment-toggle-${dayId}`
+  const segmentLabel = `${day.from} to ${day.to}`
 
   const difficultyColor = {
     Easy: "bg-emerald-100 text-emerald-800",
@@ -46,16 +51,52 @@ export function DayCard({ dayId }: { dayId: number }) {
     <section
       data-testid={`day-panel-${dayId}`}
       className={cn(
-        "relative cursor-pointer rounded-[24px] border border-border/70 transition-colors duration-200",
+        "relative rounded-[24px] border border-border/70 transition-colors duration-200",
         isSelected
           ? "bg-white/90 shadow-[0_14px_30px_-26px_rgba(15,23,42,0.6)]"
-          : "bg-background/70 hover:bg-background/90"
+          : "bg-background/70",
+        isFocused && "ring-2 ring-primary/20"
       )}
       onClick={() => setSelectedDay(dayId)}
     >
       <div className="px-5 py-5 lg:px-6">
-        {isSelected && profileReady && (
-          <div className="absolute right-5 top-5 z-10 lg:right-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <Checkbox
+              id={segmentCheckboxId}
+              checked={isSelected}
+              aria-label={segmentLabel}
+              onCheckedChange={() => toggleSegment(dayId)}
+              onClick={(event) => event.stopPropagation()}
+              className="mt-1"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="rounded-full px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Segment {dayId}
+                </Badge>
+                <Badge variant="secondary" className={cn("text-xs", difficultyColor[day.difficulty])}>
+                  {day.difficulty}
+                </Badge>
+              </div>
+
+              <Label
+                htmlFor={segmentCheckboxId}
+                className="cursor-pointer text-base font-semibold text-foreground"
+              >
+                {segmentLabel}
+              </Label>
+
+              <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                <Route className="h-3.5 w-3.5" />
+                <span className="truncate">
+                  {day.from} <ChevronRight className="inline h-3 w-3" /> {day.to}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {profileReady && isSelected && (
             <FuelPlanDrawer
               trigger={
                 <Button
@@ -71,125 +112,106 @@ export function DayCard({ dayId }: { dayId: number }) {
                 </Button>
               }
             />
-          </div>
-        )}
-
-        <div className="flex items-start justify-between gap-3">
-          <div className={cn("min-w-0 flex-1", isSelected && profileReady && "pr-32 sm:pr-40")}>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-foreground">{day.name}</span>
-              <Badge variant="secondary" className={cn("text-xs", difficultyColor[day.difficulty])}>
-                {day.difficulty}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-              <MapPin className="w-3 h-3" />
-              <span className="truncate">
-                {day.from} <ChevronRight className="w-3 h-3 inline" /> {day.to}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
-          <div className="flex items-center gap-1.5 bg-muted/50 rounded px-2 py-1.5">
-            <Mountain className="w-3.5 h-3.5 text-primary" />
+        <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+          <div className="flex items-center gap-1.5 rounded px-2 py-1.5 bg-muted/50">
+            <Mountain className="h-3.5 w-3.5 text-primary" />
             <span className="font-medium">{totals.distance.toFixed(1)} km</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-muted/50 rounded px-2 py-1.5">
-            <Clock className="w-3.5 h-3.5 text-primary" />
-            <span className="font-medium">{totals.timeMin}–{totals.timeMax} hrs</span>
+          <div className="flex items-center gap-1.5 rounded px-2 py-1.5 bg-muted/50">
+            <Clock className="h-3.5 w-3.5 text-primary" />
+            <span className="font-medium">{totals.timeMin}-{totals.timeMax} hrs</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-muted/50 rounded px-2 py-1.5">
-            <ArrowUp className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="flex items-center gap-1.5 rounded px-2 py-1.5 bg-muted/50">
+            <ArrowUp className="h-3.5 w-3.5 text-emerald-600" />
             <span className="font-medium">+{totals.ascent}m</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-muted/50 rounded px-2 py-1.5">
-            <ArrowDown className="w-3.5 h-3.5 text-rose-600" />
+          <div className="flex items-center gap-1.5 rounded px-2 py-1.5 bg-muted/50">
+            <ArrowDown className="h-3.5 w-3.5 text-rose-600" />
             <span className="font-medium">-{totals.descent}m</span>
           </div>
         </div>
 
-        {isSelected && (
-          <div className="pt-4 border-t border-border/70">
-            <p className="text-sm text-muted-foreground mb-3">{day.description}</p>
+        <p className="mt-4 text-sm text-muted-foreground">{day.description}</p>
 
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {day.highlights.map((h) => (
-                <Badge key={h} variant="outline" className="text-xs font-normal">
-                  {h}
-                </Badge>
-              ))}
-            </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {day.highlights.map((highlight) => (
+            <Badge key={highlight} variant="outline" className="text-xs font-normal">
+              {highlight}
+            </Badge>
+          ))}
+        </div>
 
-            {sideTripOptions.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-foreground">Side Trips</p>
-                {sideTripOptions.map((st) => (
-                  <div
-                    key={st.id}
-                    className={cn(
-                      "flex items-start gap-3 rounded-xl border border-border/50 bg-background/70 p-3 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                      selectedSideTrips.includes(st.id)
-                        ? "bg-primary/12 ring-1 ring-primary/25"
-                        : "hover:bg-background"
-                    )}
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={selectedSideTrips.includes(st.id)}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleSideTrip(st.id)
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        toggleSideTrip(st.id)
-                      }
-                    }}
-                  >
-                    <Checkbox
-                      id={st.id}
-                      checked={selectedSideTrips.includes(st.id)}
-                      onCheckedChange={() => toggleSideTrip(st.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <Label
-                        htmlFor={st.id}
-                        className="text-sm font-medium cursor-pointer"
-                      >
-                        {st.name}
-                      </Label>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span>+{st.distanceKm} km</span>
-                        <span className="text-muted-foreground/50">•</span>
-                        <span>+{st.ascentM}m</span>
-                        <span className="text-muted-foreground/50">•</span>
-                        <span>{st.timeHoursMin}–{st.timeHoursMax} hrs</span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-xs ml-auto",
-                            st.difficulty === "Easy" && "border-emerald-300 text-emerald-700",
-                            st.difficulty === "Moderate" && "border-amber-300 text-amber-700",
-                            st.difficulty === "Hard" && "border-rose-300 text-rose-700",
-                            st.difficulty === "Very Hard" && "border-purple-300 text-purple-700"
-                          )}
-                        >
-                          {st.difficulty}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {st.description}
-                      </p>
-                    </div>
+        {sideTripOptions.length > 0 && (
+          <div className="mt-4 space-y-2 border-t border-border/70 pt-4">
+            <p className="text-xs font-medium text-foreground">Optional side trips</p>
+            {sideTripOptions.map((sideTrip) => (
+              <div
+                key={sideTrip.id}
+                className={cn(
+                  "flex items-start gap-3 rounded-xl border border-border/50 bg-background/70 p-3 transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  selectedSideTrips.includes(sideTrip.id)
+                    ? "bg-primary/12 ring-1 ring-primary/25"
+                    : "hover:bg-background"
+                )}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selectedSideTrips.includes(sideTrip.id)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleSideTrip(sideTrip.id)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    toggleSideTrip(sideTrip.id)
+                  }
+                }}
+              >
+                <Checkbox
+                  id={sideTrip.id}
+                  checked={selectedSideTrips.includes(sideTrip.id)}
+                  onCheckedChange={() => toggleSideTrip(sideTrip.id)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="mt-0.5"
+                />
+                <div className="min-w-0 flex-1">
+                  <Label htmlFor={sideTrip.id} className="cursor-pointer text-sm font-medium">
+                    {sideTrip.name}
+                  </Label>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>+{sideTrip.distanceKm} km</span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <span>+{sideTrip.ascentM}m</span>
+                    <span className="text-muted-foreground/50">•</span>
+                    <span>{sideTrip.timeHoursMin}-{sideTrip.timeHoursMax} hrs</span>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "ml-auto text-xs",
+                        sideTrip.difficulty === "Easy" && "border-emerald-300 text-emerald-700",
+                        sideTrip.difficulty === "Moderate" && "border-amber-300 text-amber-700",
+                        sideTrip.difficulty === "Hard" && "border-rose-300 text-rose-700",
+                        sideTrip.difficulty === "Very Hard" && "border-purple-300 text-purple-700"
+                      )}
+                    >
+                      {sideTrip.difficulty}
+                    </Badge>
                   </div>
-                ))}
+                  <p className="mt-1 text-xs text-muted-foreground">{sideTrip.description}</p>
+                </div>
               </div>
-            )}
+            ))}
+          </div>
+        )}
+
+        {!sideTripOptions.length && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-dashed border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            No optional side trips mapped for this segment.
           </div>
         )}
       </div>

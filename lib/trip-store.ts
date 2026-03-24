@@ -7,8 +7,11 @@ import { days, sideTrips, type DaySegment, type SideTrip } from "@/lib/overland-
 
 export const TRIP_STORAGE_KEY = "trip-preferences"
 
+type ExitMethod = "ferry" | "walk"
+
 export interface TripStateValues {
-  exitMethod: "ferry" | "walk"
+  exitMethod: ExitMethod
+  selectedSegmentIds: number[]
   selectedDay: number
   selectedSideTrips: string[]
 }
@@ -26,7 +29,14 @@ interface TripTotals extends DayTotals {
 }
 
 interface TripStoreState extends TripStateValues {
-  setExitMethod: (method: "ferry" | "walk") => void
+  setExitMethod: (method: ExitMethod) => void
+  toggleSegment: (segmentId: number) => void
+  selectAllSegments: () => void
+  selectEntireTrip: () => void
+  clearSelections: () => void
+  isSegmentSelected: (segmentId: number) => boolean
+  areAllSegmentsSelected: () => boolean
+  getSelectedSegments: () => DaySegment[]
   setSelectedDay: (day: number) => void
   toggleSideTrip: (id: string) => void
   getDayTotals: (dayId: number) => DayTotals
@@ -38,12 +48,33 @@ interface TripStoreState extends TripStateValues {
 
 export const defaultTripState: TripStateValues = {
   exitMethod: "ferry",
+  selectedSegmentIds: [1, 2, 3, 4, 5, 6],
   selectedDay: 1,
   selectedSideTrips: [],
 }
 
-function getActiveDaysForExitMethod(exitMethod: "ferry" | "walk") {
+function getActiveDaysForExitMethod(exitMethod: ExitMethod) {
   return exitMethod === "ferry" ? days.filter((day) => day.id <= 6) : days
+}
+
+function getSelectableSegmentIds(exitMethod: ExitMethod) {
+  return getActiveDaysForExitMethod(exitMethod).map((day) => day.id)
+}
+
+function normalizeSelectedSegmentIds(segmentIds: number[], exitMethod: ExitMethod) {
+  const allowedIds = new Set(getSelectableSegmentIds(exitMethod))
+
+  return [...new Set(segmentIds)]
+    .filter((segmentId) => allowedIds.has(segmentId))
+    .sort((left, right) => left - right)
+}
+
+function getSelectableSideTripIds(exitMethod: ExitMethod) {
+  const allowedSegmentIds = new Set(getSelectableSegmentIds(exitMethod))
+
+  return sideTrips
+    .filter((sideTrip) => allowedSegmentIds.has(sideTrip.dayId))
+    .map((sideTrip) => sideTrip.id)
 }
 
 export const useTripStore = create<TripStoreState>()(
@@ -52,23 +83,69 @@ export const useTripStore = create<TripStoreState>()(
       ...defaultTripState,
       setExitMethod: (method) => {
         set((state) => {
-          if (method === "ferry" && state.selectedDay === 7) {
-            return {
-              exitMethod: method,
-              selectedDay: 6,
-              selectedSideTrips: [],
-            }
-          }
-
           return {
             exitMethod: method,
+            selectedSegmentIds: normalizeSelectedSegmentIds(state.selectedSegmentIds, method),
+            selectedDay: method === "ferry" && state.selectedDay === 7 ? 6 : state.selectedDay,
           }
         })
+      },
+      toggleSegment: (segmentId) => {
+        set((state) => {
+          const allowedIds = getSelectableSegmentIds(state.exitMethod)
+
+          if (!allowedIds.includes(segmentId)) {
+            return state
+          }
+
+          const isCurrentlySelected = state.selectedSegmentIds.includes(segmentId)
+          const nextSelectedSegmentIds = isCurrentlySelected
+            ? state.selectedSegmentIds.filter((id) => id !== segmentId)
+            : [...state.selectedSegmentIds, segmentId]
+          const normalizedSelectedSegmentIds = normalizeSelectedSegmentIds(
+            nextSelectedSegmentIds,
+            state.exitMethod
+          )
+
+          return {
+            selectedSegmentIds: normalizedSelectedSegmentIds,
+            selectedDay: isCurrentlySelected
+              ? normalizedSelectedSegmentIds[0] ?? state.selectedDay
+              : segmentId,
+          }
+        })
+      },
+      selectAllSegments: () => {
+        set((state) => ({
+          selectedSegmentIds: getSelectableSegmentIds(state.exitMethod),
+        }))
+      },
+      selectEntireTrip: () => {
+        set((state) => ({
+          selectedSegmentIds: getSelectableSegmentIds(state.exitMethod),
+          selectedSideTrips: getSelectableSideTripIds(state.exitMethod),
+        }))
+      },
+      clearSelections: () => {
+        set(() => ({
+          selectedSegmentIds: [],
+          selectedSideTrips: [],
+        }))
+      },
+      isSegmentSelected: (segmentId) => get().selectedSegmentIds.includes(segmentId),
+      areAllSegmentsSelected: () => {
+        const allowedIds = getSelectableSegmentIds(get().exitMethod)
+
+        return allowedIds.every((segmentId) => get().selectedSegmentIds.includes(segmentId))
+      },
+      getSelectedSegments: () => {
+        const selectedSegmentIds = new Set(get().selectedSegmentIds)
+
+        return days.filter((day) => selectedSegmentIds.has(day.id))
       },
       setSelectedDay: (day) => {
         set(() => ({
           selectedDay: day,
-          selectedSideTrips: [],
         }))
       },
       toggleSideTrip: (id) => {
@@ -108,11 +185,20 @@ export const useTripStore = create<TripStoreState>()(
         }
       },
       getTripTotals: () => {
-        const activeDays = get().getActiveDays()
+        const selectedSegments = get().getSelectedSegments()
+        const selectedSideTrips = sideTrips.filter((sideTrip) =>
+          get().selectedSideTrips.includes(sideTrip.id)
+        )
 
-        return activeDays.reduce<TripTotals>(
-          (totals, day) => {
-            const dayTotals = get().getDayTotals(day.id)
+        const segmentTotals = selectedSegments.reduce<TripTotals>(
+          (totals, segment) => {
+            const dayTotals = {
+              distance: segment.baseDistanceKm,
+              ascent: segment.baseAscentM,
+              descent: segment.baseDescentM,
+              timeMin: segment.baseTimeHoursMin,
+              timeMax: segment.baseTimeHoursMax,
+            }
 
             return {
               distance: totals.distance + dayTotals.distance,
@@ -120,7 +206,7 @@ export const useTripStore = create<TripStoreState>()(
               descent: totals.descent + dayTotals.descent,
               timeMin: totals.timeMin + dayTotals.timeMin,
               timeMax: totals.timeMax + dayTotals.timeMax,
-              days: activeDays.length,
+              days: selectedSegments.length,
             }
           },
           {
@@ -129,8 +215,20 @@ export const useTripStore = create<TripStoreState>()(
             descent: 0,
             timeMin: 0,
             timeMax: 0,
-            days: activeDays.length,
+            days: selectedSegments.length,
           }
+        )
+
+        return selectedSideTrips.reduce<TripTotals>(
+          (totals, sideTrip) => ({
+            distance: totals.distance + sideTrip.distanceKm,
+            ascent: totals.ascent + sideTrip.ascentM,
+            descent: totals.descent + sideTrip.descentM,
+            timeMin: totals.timeMin + sideTrip.timeHoursMin,
+            timeMax: totals.timeMax + sideTrip.timeHoursMax,
+            days: totals.days,
+          }),
+          segmentTotals
         )
       },
     }),
@@ -139,6 +237,8 @@ export const useTripStore = create<TripStoreState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         exitMethod: state.exitMethod,
+        selectedSegmentIds: state.selectedSegmentIds,
+        selectedSideTrips: state.selectedSideTrips,
       }),
     }
   )

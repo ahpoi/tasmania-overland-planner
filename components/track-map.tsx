@@ -3,20 +3,16 @@
 import { useEffect, useRef, useMemo, useState } from "react"
 import { useTripStore } from "@/lib/trip-store"
 import { waypoints, days, sideTrips } from "@/lib/overland-data"
-import { getDayTrackPath, getFullTrackPath } from "@/lib/main-track-map-data"
+import { getFullTrackPath, getSelectedTrackPaths } from "@/lib/main-track-map-data"
 import { buildSideTripPath } from "@/lib/side-trip-map-data"
 import type { LatLngTuple } from "@/lib/side-trip-geometries"
 import { cn } from "@/lib/utils"
 
-export function getFocusedItineraryPaths(
-  selectedDayPath: LatLngTuple[] | null,
+export function getSelectedTripPaths(
+  selectedTrackPaths: LatLngTuple[][],
   selectedSideTripIds: string[]
 ) {
-  const focusedPaths: LatLngTuple[][] = []
-
-  if (selectedDayPath) {
-    focusedPaths.push(selectedDayPath)
-  }
+  const focusedPaths = [...selectedTrackPaths]
 
   selectedSideTripIds.forEach((sideTripId) => {
     const sideTripPath = buildSideTripPath(sideTripId)
@@ -33,12 +29,12 @@ export function TrackMap({ className, immersive = false }: { className?: string;
   const mapInstanceRef = useRef<L.Map | null>(null)
   const markersRef = useRef<L.Marker[]>([])
   const polylineRef = useRef<L.Polyline | null>(null)
-  const dayHighlightRef = useRef<L.Polyline | null>(null)
+  const selectedTrackLinesRef = useRef<L.Polyline[]>([])
   const sideTripLinesRef = useRef<L.Polyline[]>([])
   const [isClient, setIsClient] = useState(false)
   const [leafletModule, setLeafletModule] = useState<typeof import("leaflet") | null>(null)
 
-  const { selectedDay, exitMethod, selectedSideTrips } = useTripStore()
+  const { selectedDay, selectedSegmentIds, exitMethod, selectedSideTrips } = useTripStore()
 
   // Load Leaflet dynamically on client side only
   useEffect(() => {
@@ -50,14 +46,14 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     import("leaflet/dist/leaflet.css")
   }, [])
 
-  // Get waypoints for current day
-  const currentDayWaypoints = useMemo(() => {
-    const day = days.find((d) => d.id === selectedDay)
-    if (!day) return []
-    return waypoints.filter(
-      (w) => w.name.includes(day.from) || w.name.includes(day.to) || w.name === day.from || w.name === day.to
+  const selectedSegmentWaypoints = useMemo(() => {
+    const selectedSegments = days.filter((day) => selectedSegmentIds.includes(day.id))
+    const segmentWaypointNames = new Set(
+      selectedSegments.flatMap((segment) => [segment.from, segment.to])
     )
-  }, [selectedDay])
+
+    return waypoints.filter((waypoint) => segmentWaypointNames.has(waypoint.name))
+  }, [selectedSegmentIds])
 
   // Get selected side trip waypoint IDs
   const selectedSideTripWaypointIds = useMemo(() => {
@@ -68,16 +64,13 @@ export function TrackMap({ className, immersive = false }: { className?: string;
   }, [selectedSideTrips])
 
   const fullTrackPath = useMemo(() => getFullTrackPath(exitMethod), [exitMethod])
-  const selectedDayPath = useMemo(() => {
-    if (selectedDay > (exitMethod === "ferry" ? 6 : 7)) {
-      return null
-    }
-
-    return getDayTrackPath(selectedDay)
-  }, [exitMethod, selectedDay])
+  const selectedTrackPaths = useMemo(
+    () => getSelectedTrackPaths(selectedSegmentIds, exitMethod),
+    [exitMethod, selectedSegmentIds]
+  )
   const focusedItineraryPaths = useMemo(
-    () => getFocusedItineraryPaths(selectedDayPath, selectedSideTrips),
-    [selectedDayPath, selectedSideTrips]
+    () => getSelectedTripPaths(selectedTrackPaths, selectedSideTrips),
+    [selectedSideTrips, selectedTrackPaths]
   )
 
   // Custom icon creator
@@ -186,7 +179,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
       : waypoints
 
     visibleWaypoints.forEach((wp) => {
-      const isOnCurrentDay = currentDayWaypoints.some((cdw) => cdw.id === wp.id)
+      const isOnCurrentDay = selectedSegmentWaypoints.some((selectedWaypoint) => selectedWaypoint.id === wp.id)
       const isSelectedSideTrip = selectedSideTripWaypointIds.includes(wp.id)
       
       const marker = leafletModule.marker([wp.lat, wp.lng], {
@@ -203,31 +196,28 @@ export function TrackMap({ className, immersive = false }: { className?: string;
 
       markersRef.current.push(marker)
     })
-  }, [currentDayWaypoints, exitMethod, selectedSideTripWaypointIds, leafletModule, createCustomIcon])
+  }, [selectedSegmentWaypoints, exitMethod, selectedSideTripWaypointIds, leafletModule, createCustomIcon])
 
-  // Update day highlight and side trip lines
+  // Update selected main-track lines and side trip lines
   useEffect(() => {
     if (!mapInstanceRef.current || !leafletModule) return
 
-    // Remove existing highlight
-    if (dayHighlightRef.current) {
-      dayHighlightRef.current.remove()
-    }
+    selectedTrackLinesRef.current.forEach((line) => line.remove())
+    selectedTrackLinesRef.current = []
 
-    // Remove existing side trip lines
     sideTripLinesRef.current.forEach((line) => line.remove())
     sideTripLinesRef.current = []
 
-    // Add new highlight for selected day
-    if (selectedDayPath) {
-      dayHighlightRef.current = leafletModule.polyline(selectedDayPath, {
+    selectedTrackPaths.forEach((path) => {
+      const trackLine = leafletModule.polyline(path, {
         color: "#2d6a4f",
         weight: 5,
         opacity: 1,
       }).addTo(mapInstanceRef.current)
-    }
 
-    // Add side trip paths for selected side trips
+      selectedTrackLinesRef.current.push(trackLine)
+    })
+
     selectedSideTrips.forEach((sideTripId) => {
       const path = buildSideTripPath(sideTripId)
       if (path && mapInstanceRef.current) {
@@ -249,7 +239,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
         sideTripLinesRef.current.push(line)
       }
     })
-  }, [selectedDayPath, selectedSideTrips, leafletModule])
+  }, [selectedSideTrips, selectedTrackPaths, leafletModule])
 
   if (!isClient) {
     return (

@@ -1,21 +1,27 @@
 import { describe, expect, it } from "vitest"
 
-import { getDayTrackPath } from "@/lib/main-track-map-data"
+import { getSelectedTrackPaths, getDayTrackPath } from "@/lib/main-track-map-data"
 import { buildSideTripPath } from "@/lib/side-trip-map-data"
-import { getFocusedItineraryPaths } from "@/components/track-map"
+import { getSelectedTripPaths } from "@/components/track-map"
 
-describe("getFocusedItineraryPaths", () => {
-  it("returns the selected day path when no side trips are selected", () => {
-    expect(getFocusedItineraryPaths(getDayTrackPath(2), [])).toEqual([getDayTrackPath(2)])
+describe("getSelectedTripPaths", () => {
+  it("returns selected main-track paths when no side trips are selected", () => {
+    const selectedTrackPaths = getSelectedTrackPaths([2, 3], "walk")
+
+    expect(getSelectedTripPaths(selectedTrackPaths, [])).toEqual(selectedTrackPaths)
   })
 
-  it("appends selected side trip paths to the selected day path", () => {
-    const paths = getFocusedItineraryPaths(getDayTrackPath(4), ["mt-ossa", "pelion-east"])
+  it("appends selected side trip paths to the selected main-track paths", () => {
+    const selectedTrackPaths = [getDayTrackPath(4)!]
 
-    expect(paths).toEqual([
-      getDayTrackPath(4),
+    expect(getSelectedTripPaths(selectedTrackPaths, ["mt-ossa", "pelion-east"])).toEqual([
+      ...selectedTrackPaths,
       buildSideTripPath("mt-ossa"),
       buildSideTripPath("pelion-east"),
     ])
+  })
+
+  it("supports map bounds even when only side trips are selected", () => {
+    expect(getSelectedTripPaths([], ["mt-ossa"])).toEqual([buildSideTripPath("mt-ossa")])
   })
 })

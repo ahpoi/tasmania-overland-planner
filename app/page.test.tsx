@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach } from "vitest"
+import { beforeEach, describe, expect, it } from "vitest"
 
 import Page from "@/app/page"
 import { defaultTripState, useTripStore } from "@/lib/trip-store"
@@ -28,33 +28,6 @@ vi.mock("@/components/elevation-chart", () => ({
   ),
 }))
 
-function TripContextProbe() {
-  const {
-    getActiveDays,
-    selectedDay,
-    setSelectedDay,
-    getDayPosition,
-    setExitMethod,
-  } = useTripStore()
-
-  return (
-    <div>
-      <span data-testid="active-day-count">{getActiveDays().length}</span>
-      <span data-testid="selected-day">{selectedDay}</span>
-      <span data-testid="selected-day-position">{getDayPosition(selectedDay)}</span>
-      <button type="button" onClick={() => setSelectedDay(6)}>
-        Select Day 6
-      </button>
-      <button type="button" onClick={() => setSelectedDay(7)}>
-        Select Day 7
-      </button>
-      <button type="button" onClick={() => setExitMethod("walk")}>
-        Walk Mode
-      </button>
-    </div>
-  )
-}
-
 describe("planner layout", () => {
   beforeEach(() => {
     localStorage.clear()
@@ -63,83 +36,48 @@ describe("planner layout", () => {
     })
   })
 
-  it("keeps the itinerary exit-method switch group content-width on mobile", () => {
+  it("renders the planner as a trip builder with quick actions", () => {
     render(<Page />)
 
-    const itineraryHeader = screen
-      .getByRole("heading", { name: /Daily Itinerary/i })
-      .parentElement as HTMLElement
-    const switchControl = within(itineraryHeader).getByRole("switch", { name: /Ferry/i })
-    const switchGroup = switchControl.parentElement
-
-    expect(switchGroup).not.toBeNull()
-    expect(switchGroup?.className).not.toContain("w-full")
-    expect(switchGroup?.className).not.toContain("flex-1")
+    expect(screen.getByRole("heading", { name: /Trip Builder/i })).toBeVisible()
+    expect(screen.queryByRole("heading", { name: /Daily Itinerary/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /Select full trip/i })).toBeVisible()
+    expect(screen.getByRole("button", { name: /Clear all/i })).toBeVisible()
+    expect(screen.getByRole("checkbox", { name: /Ronny Creek to Waterfall Valley Huts/i })).toBeChecked()
+    expect(screen.getByRole("checkbox", { name: /Cradle Mountain Summit/i })).not.toBeChecked()
   })
 
-  it("lays out the itinerary header controls in a wrapping row instead of a stacked column", () => {
-    render(<Page />)
-
-    const itineraryHeader = screen
-      .getByRole("heading", { name: /Daily Itinerary/i })
-      .parentElement as HTMLElement
-    const switchControl = within(itineraryHeader).getByRole("switch", { name: /Ferry/i })
-    const switchGroup = switchControl.parentElement
-    const headerActions = switchGroup?.parentElement
-
-    expect(headerActions).not.toBeNull()
-    expect(headerActions?.className).toContain("flex-row")
-    expect(headerActions?.className).toContain("flex-wrap")
-    expect(headerActions?.className).not.toContain("flex-col")
-  })
-
-  it("keeps the profile trigger beside the planner title in the mobile header row", () => {
-    render(<Page />)
-
-    const title = screen.getByRole("heading", { name: /Tasmania Overland Track Planner/i })
-    const profileButton = screen.getByRole("button", { name: /^Profile$/i })
-    const titleBlock = title.closest("div")?.parentElement
-    const actionBlock = profileButton.parentElement?.parentElement
-    const headerRow = titleBlock?.parentElement
-
-    expect(headerRow).not.toBeNull()
-    expect(titleBlock).not.toBeNull()
-    expect(actionBlock).not.toBeNull()
-    expect(headerRow).toContainElement(titleBlock)
-    expect(headerRow).toContainElement(actionBlock)
-    expect(headerRow?.className).toContain("flex-row")
-    expect(headerRow?.className).not.toContain("flex-col")
-  })
-
-  it("keeps the itinerary header while flattening the desktop surfaces and preserving the mobile map tools", async () => {
+  it("lets people clear the trip and then reselect the full route with side trips", async () => {
     const user = userEvent.setup()
 
     render(<Page />)
 
-    expect(screen.getByRole("heading", { name: /Tasmania Overland Track Planner/i })).toBeVisible()
-    expect(screen.getByRole("button", { name: /^Profile$/i })).toBeVisible()
-    expect(screen.queryByRole("button", { name: /^Fuel Plan$/i })).not.toBeInTheDocument()
-    const itineraryHeader = screen
-      .getByRole("heading", { name: /Daily Itinerary/i })
-      .parentElement as HTMLElement
-    expect(itineraryHeader).toBeVisible()
-    expect(within(itineraryHeader).getByRole("switch", { name: /Ferry/i })).toBeVisible()
-    expect(screen.queryByText(/Click a day for details/i)).not.toBeInTheDocument()
+    const firstSegment = screen.getByRole("checkbox", { name: /Ronny Creek to Waterfall Valley Huts/i })
+    const sideTrip = screen.getByRole("checkbox", { name: /Cradle Mountain Summit/i })
+
+    await user.click(screen.getByRole("button", { name: /Clear all/i }))
+
+    expect(firstSegment).not.toBeChecked()
+    expect(sideTrip).not.toBeChecked()
+
+    await user.click(screen.getByRole("button", { name: /Select full trip/i }))
+
+    expect(firstSegment).toBeChecked()
+    expect(sideTrip).toBeChecked()
+  })
+
+  it("keeps the immersive desktop map stage and mobile map sheet tools", async () => {
+    const user = userEvent.setup()
+
+    render(<Page />)
+
+    const pageShell = screen.getByRole("banner").parentElement
+    expect(pageShell).not.toBeNull()
+    expect(pageShell?.className).toContain("overflow-x-hidden")
 
     const itineraryPanel = screen.getByTestId("itinerary-panel")
-    expect(itineraryPanel.className).not.toContain("rounded-[28px]")
-    expect(itineraryPanel.className).not.toContain("shadow-[")
-    expect(itineraryPanel.className).toContain("border-y")
 
-    const itineraryList = screen.getByTestId("itinerary-list")
-    expect(itineraryList.className).toContain("space-y-4")
-    expect(itineraryList.className).not.toContain("divide-y")
-
-    const dayPanel = screen.getByTestId("day-panel-1")
-    expect(dayPanel.className).toContain("rounded-[24px]")
-    expect(dayPanel.className).toContain("border")
-    expect(dayPanel.className).toContain("bg-white/90")
-    expect(within(dayPanel).queryByRole("button", { name: /^Fuel Plan$/i })).not.toBeInTheDocument()
+    expect(within(itineraryPanel).getByRole("switch", { name: /Ferry/i })).toBeVisible()
 
     const mapStage = screen.getByTestId("planner-map-stage")
     expect(mapStage).toBeInTheDocument()
@@ -152,66 +90,17 @@ describe("planner layout", () => {
       expect.stringContaining("h-full")
     )
 
-    const overlay = screen.getByTestId("planner-elevation-overlay")
-    expect(overlay).toBeInTheDocument()
-    expect(overlay.className).toContain("z-[1000]")
-    const overlayChart = within(overlay).getByTestId("elevation-chart")
-    expect(overlayChart).toBeVisible()
-    expect(overlayChart).toHaveAttribute("data-compact", "true")
-    expect(overlayChart).toHaveAttribute(
-      "data-class-name",
-      expect.stringContaining("w-full")
-    )
-    expect(overlayChart).toHaveAttribute(
-      "data-class-name",
-      expect.stringContaining("border-x-0")
-    )
-
-    const toggle = within(mapStage).getByRole("button", { name: /Hide Elevation/i })
-    await user.click(toggle)
-
-    expect(screen.queryByTestId("planner-elevation-overlay")).not.toBeInTheDocument()
-    expect(within(mapStage).getByRole("button", { name: /Show Elevation/i })).toBeVisible()
-
-    await user.click(within(mapStage).getByRole("button", { name: /Show Elevation/i }))
-
-    expect(screen.getByTestId("planner-elevation-overlay")).toBeInTheDocument()
-    expect(within(mapStage).getByRole("button", { name: /Hide Elevation/i })).toBeVisible()
-
     await user.click(screen.getByRole("button", { name: /View Map/i }))
 
-    const drawer = document.querySelector('[data-slot="drawer-content"]')
-    expect(drawer).toBeInTheDocument()
-    expect(within(drawer as HTMLElement).getByTestId("track-map")).toBeVisible()
-    expect(within(drawer as HTMLElement).getByTestId("elevation-chart")).toHaveAttribute(
+    const sheet = document.querySelector('[data-slot="sheet-content"]')
+    expect(sheet).toBeInTheDocument()
+    expect(sheet?.className).toContain("inset-0")
+    expect(sheet?.className).toContain("h-[100dvh]")
+    expect(sheet?.className).toContain("w-screen")
+    expect(within(sheet as HTMLElement).getByTestId("track-map")).toBeVisible()
+    expect(within(sheet as HTMLElement).getByTestId("elevation-chart")).toHaveAttribute(
       "data-compact",
       "false"
     )
-  })
-
-  it("tracks the selected day position against the active itinerary", async () => {
-    const user = userEvent.setup()
-
-    render(
-      <TripContextProbe />
-    )
-
-    expect(screen.getByTestId("active-day-count")).toHaveTextContent("6")
-    expect(screen.getByTestId("selected-day")).toHaveTextContent("1")
-    expect(screen.getByTestId("selected-day-position")).toHaveTextContent("1")
-
-    await user.click(screen.getByRole("button", { name: /Select Day 6/i }))
-
-    expect(screen.getByTestId("selected-day")).toHaveTextContent("6")
-    expect(screen.getByTestId("selected-day-position")).toHaveTextContent("6")
-
-    await user.click(screen.getByRole("button", { name: /Walk Mode/i }))
-
-    expect(screen.getByTestId("active-day-count")).toHaveTextContent("7")
-
-    await user.click(screen.getByRole("button", { name: /Select Day 7/i }))
-
-    expect(screen.getByTestId("selected-day")).toHaveTextContent("7")
-    expect(screen.getByTestId("selected-day-position")).toHaveTextContent("7")
   })
 })
