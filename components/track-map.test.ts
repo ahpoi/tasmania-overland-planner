@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { getSelectedTrackPaths, getDayTrackPath } from "@/lib/main-track-map-data"
 import { buildSideTripPath } from "@/lib/side-trip-map-data"
-import { getMapFocusPaths, getSelectedTripPaths } from "@/components/track-map"
+import { getMapFocusPaths, getSelectedTripPaths, getTrackMapStatusText } from "@/components/track-map"
 
 describe("getSelectedTripPaths", () => {
   it("returns selected main-track paths when no side trips are selected", () => {
@@ -66,5 +66,15 @@ describe("getMapFocusPaths", () => {
         selectedSideTripIds: [],
       })
     ).toEqual(selectedTripPaths)
+  })
+})
+
+describe("getTrackMapStatusText", () => {
+  it("describes the focused segment and selected side trip count", () => {
+    expect(getTrackMapStatusText(4, 2)).toBe("Segment 4 focused | 2 side trips shown")
+  })
+
+  it("falls back to the selected trip summary when no segment is focused", () => {
+    expect(getTrackMapStatusText(null, 1)).toBe("Selected trip shown | 1 side trip shown")
   })
 })

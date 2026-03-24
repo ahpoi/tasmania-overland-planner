@@ -43,6 +43,7 @@ export const useUserProfileStore = create<UserProfileState>()(
     }),
     {
       name: PROFILE_STORAGE_KEY,
+      skipHydration: true,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         heightCm: state.heightCm,

@@ -10,21 +10,21 @@ function renderFuelDrawerOnly() {
   return render(<FuelPlanDrawer />)
 }
 
-function TripDaySwitch() {
+function TripSegmentSwitch() {
   const { setSelectedDay } = useTripStore()
 
   return (
     <button type="button" onClick={() => setSelectedDay(3)}>
-      Select Day 3
+      Select Segment 3
     </button>
   )
 }
 
-function renderFuelDrawerWithDaySwitch() {
+function renderFuelDrawerWithSegmentSwitch() {
   return render(
     <>
       <FuelPlanDrawer />
-      <TripDaySwitch />
+      <TripSegmentSwitch />
     </>
   )
 }
@@ -64,7 +64,7 @@ describe("FuelPlanDrawer", () => {
     expect(trigger).not.toHaveTextContent(/Fuel Plan/i)
   })
 
-  it("renders the selected-day estimate and shows the calculation breakdown accordion", async () => {
+  it("renders the selected-segment estimate and shows the calculation breakdown accordion", async () => {
     useUserProfileStore.setState({
       ...defaultUserProfile,
       heightCm: 178,
@@ -79,7 +79,7 @@ describe("FuelPlanDrawer", () => {
     await userEvent.setup().click(screen.getByRole("button", { name: /Fuel Plan/i }))
 
     const drawer = document.querySelector('[data-slot="drawer-content"]')
-    expect(within(drawer as HTMLElement).getByText(/Day 1/i)).toBeVisible()
+    expect(within(drawer as HTMLElement).getByText(/Segment 1/i)).toBeVisible()
     expect(within(drawer as HTMLElement).getAllByText(/Recommended food to pack/i).length).toBeGreaterThan(0)
     expect(within(drawer as HTMLElement).getByText(/Breakfast/i)).toBeVisible()
     expect(within(drawer as HTMLElement).getByText(/Effective pack weight/i)).toBeVisible()
@@ -108,6 +108,12 @@ describe("FuelPlanDrawer", () => {
     expect(
       within(drawer as HTMLElement).getAllByText(/Recommended food to pack/i).length
     ).toBeGreaterThan(0)
+
+    await userEvent
+      .setup()
+      .click(within(drawer as HTMLElement).getByRole("button", { name: /Trip inputs/i }))
+
+    expect(within(drawer as HTMLElement).getByText(/Completed prior segments/i)).toBeVisible()
   })
 
   it("shows an approximation note for the fuel estimates", async () => {
@@ -128,9 +134,10 @@ describe("FuelPlanDrawer", () => {
     expect(
       within(drawer as HTMLElement).getByText(/these fuel and calorie numbers are approximate estimates/i)
     ).toBeVisible()
+    expect(within(drawer as HTMLElement).getByText(/selected segment, and active side trips/i)).toBeVisible()
   })
 
-  it("updates the effective pack weight when the selected day changes", async () => {
+  it("updates the effective pack weight when the selected segment changes", async () => {
     const user = userEvent.setup()
 
     useUserProfileStore.setState({
@@ -142,12 +149,13 @@ describe("FuelPlanDrawer", () => {
       dailyPackReductionKg: 0.45,
     })
 
-    renderFuelDrawerWithDaySwitch()
+    renderFuelDrawerWithSegmentSwitch()
 
-    await user.click(screen.getByRole("button", { name: /Select Day 3/i }))
+    await user.click(screen.getByRole("button", { name: /Select Segment 3/i }))
     await user.click(screen.getByRole("button", { name: /Fuel Plan/i }))
 
     const drawer = document.querySelector('[data-slot="drawer-content"]')
+    expect(within(drawer as HTMLElement).getByText(/Segment 3/i)).toBeVisible()
     expect(within(drawer as HTMLElement).getByText(/15\.1 kg/i)).toBeVisible()
   })
 })

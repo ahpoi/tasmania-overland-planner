@@ -8,15 +8,34 @@ import { Label } from "@/components/ui/label"
 import { useTripStore } from "@/lib/trip-store"
 import { useUserProfileStore } from "@/lib/user-profile-store"
 import { days } from "@/lib/overland-data"
-import { Clock, Mountain, ArrowDown, ArrowUp, MapPin, ChevronRight, Route, UtensilsCrossed } from "lucide-react"
+import {
+  Clock,
+  Mountain,
+  ArrowDown,
+  ArrowUp,
+  MapPin,
+  ChevronRight,
+  Route,
+  UtensilsCrossed,
+  NotebookText,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function DayCard({ dayId }: { dayId: number }) {
+export function DayCard({
+  dayId,
+  onOpenNotes,
+}: {
+  dayId: number
+  onOpenNotes?: (dayId: number) => void
+}) {
   const {
     focusedSegmentId,
+    elevationSegmentId,
+    segmentNotes,
     selectedDay,
     setSelectedDay,
     setFocusedSegment,
+    toggleElevationSegment,
     isSegmentSelected,
     toggleSegment,
     selectedSideTrips,
@@ -37,6 +56,8 @@ export function DayCard({ dayId }: { dayId: number }) {
   const sideTripOptions = getDaySideTrips(dayId)
   const isSelected = isSegmentSelected(dayId)
   const isFocused = focusedSegmentId === dayId
+  const isElevationVisible = elevationSegmentId === dayId
+  const hasSegmentNote = Boolean(segmentNotes[dayId]?.trim())
   const profileReady = [heightCm, weightKg, age, startingPackWeightKg, dailyPackReductionKg].every(
     (value) => value > 0
   )
@@ -64,7 +85,7 @@ export function DayCard({ dayId }: { dayId: number }) {
         setFocusedSegment(dayId)
       }}
     >
-      <div className="px-5 py-5 lg:px-6">
+      <div className="px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             <Checkbox
@@ -98,25 +119,56 @@ export function DayCard({ dayId }: { dayId: number }) {
             </div>
           </div>
 
-          {profileReady && isSelected && (
-            <div className="self-start sm:shrink-0">
+          <div className="flex flex-wrap items-center gap-2 self-start sm:shrink-0">
+            <Button
+              type="button"
+              variant={hasSegmentNote ? "secondary" : "outline"}
+              size="icon-sm"
+              className={cn(
+                "rounded-full",
+                hasSegmentNote && "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+              )}
+              aria-label={`Open notes for ${segmentLabel}`}
+              data-has-note={hasSegmentNote ? "true" : "false"}
+              onClick={(event) => {
+                event.stopPropagation()
+                onOpenNotes?.(dayId)
+              }}
+            >
+              <NotebookText className="h-4 w-4" />
+            </Button>
+
+            <Button
+              type="button"
+              variant={isElevationVisible ? "secondary" : "outline"}
+              size="icon-sm"
+              className="rounded-full"
+              aria-label={isElevationVisible ? "Hide Segment Elevation" : "Show Segment Elevation"}
+              onClick={(event) => {
+                event.stopPropagation()
+                toggleElevationSegment(dayId)
+              }}
+            >
+              <Mountain className="h-4 w-4" />
+            </Button>
+
+            {profileReady && isSelected && (
               <FuelPlanDrawer
                 trigger={
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="icon-sm"
                     className="rounded-full"
                     aria-label="Fuel Plan"
                     onClick={(event) => event.stopPropagation()}
                   >
                     <UtensilsCrossed className="h-4 w-4" />
-                    Fuel Plan
                   </Button>
                 }
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">

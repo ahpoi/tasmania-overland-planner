@@ -27,11 +27,19 @@ function formatKg(value: number) {
   return `${value.toFixed(1)} kg`
 }
 
+function formatSegmentLabel(segmentId: number) {
+  return `Segment ${segmentId}`
+}
+
 function stopEventPropagation(event: React.SyntheticEvent) {
   event.stopPropagation()
 }
 
-export function FuelPlanDrawer({ trigger }: { trigger?: ReactNode }) {
+export function FuelPlanDrawer({
+  trigger,
+}: {
+  trigger?: ReactNode
+}) {
   const { selectedDay, getDayTotals, getDayPosition } = useTripStore()
   const {
     heightCm,
@@ -92,9 +100,9 @@ export function FuelPlanDrawer({ trigger }: { trigger?: ReactNode }) {
         onPointerDown={stopEventPropagation}
       >
         <DrawerHeader className="border-b border-border/70">
-          <DrawerTitle className="text-xl sm:text-2xl">Selected-Day Fuel Plan</DrawerTitle>
+          <DrawerTitle className="text-xl sm:text-2xl">Selected-Segment Fuel Plan</DrawerTitle>
           <DrawerDescription className="text-base sm:text-lg">
-            Estimate calories and pack food targets from the selected itinerary day and active side trips.
+            Estimate calories and pack food targets from the selected itinerary segment and active side trips.
           </DrawerDescription>
         </DrawerHeader>
 
@@ -110,14 +118,16 @@ export function FuelPlanDrawer({ trigger }: { trigger?: ReactNode }) {
             <>
               <div className="rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
                 These fuel and calorie numbers are approximate estimates based on your profile,
-                selected day, and active side trips. Weather, pace, and personal needs can change
+                selected segment, and active side trips. Weather, pace, and personal needs can change
                 what you actually burn or need to carry.
               </div>
 
               <div className="rounded-3xl border border-border/70 bg-muted/25 p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm text-muted-foreground">{selectedDayData.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatSegmentLabel(selectedDayData.id)}
+                    </p>
                     <h3 className="text-lg font-semibold text-foreground sm:text-xl">
                       Recommended food to pack
                     </h3>

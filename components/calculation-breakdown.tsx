@@ -152,7 +152,7 @@ export function CalculationBreakdown({
               <dd>{formatNumber(inputs.dailyPackReductionKg)} kg</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-muted-foreground">Completed prior days</dt>
+              <dt className="text-muted-foreground">Completed prior segments</dt>
               <dd>{completedDaysBeforeSelected}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">

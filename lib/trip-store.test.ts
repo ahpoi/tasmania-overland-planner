@@ -19,6 +19,8 @@ describe("trip store", () => {
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
     expect(useTripStore.getState().selectedSideTrips).toEqual([])
     expect(useTripStore.getState().focusedSegmentId).toBe(1)
+    expect(useTripStore.getState().segmentNotes).toEqual({})
+    expect(useTripStore.getState().overallNote).toBe("")
   })
 
   it("toggles main track segments independently", () => {
@@ -33,22 +35,19 @@ describe("trip store", () => {
     expect(useTripStore.getState().focusedSegmentId).toBe(3)
   })
 
-  it("selects all segments available for the current exit method", () => {
-    useTripStore.getState().clearSelections()
+  it("lets people deselect every segment manually", () => {
+    ;[1, 2, 3, 4, 5, 6].forEach((segmentId) => {
+      useTripStore.getState().toggleSegment(segmentId)
+    })
 
     expect(useTripStore.getState().selectedSegmentIds).toEqual([])
     expect(useTripStore.getState().selectedSideTrips).toEqual([])
     expect(useTripStore.getState().focusedSegmentId).toBeNull()
-
-    useTripStore.getState().selectAllSegments()
-
-    expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
-    expect(useTripStore.getState().focusedSegmentId).toBe(1)
   })
 
   it("drops segment 7 when switching to ferry mode", () => {
     useTripStore.getState().setExitMethod("walk")
-    useTripStore.getState().selectAllSegments()
+    useTripStore.getState().toggleSegment(7)
     useTripStore.getState().setFocusedSegment(7)
 
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6, 7])
@@ -68,10 +67,39 @@ describe("trip store", () => {
     expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 3, 4, 5, 6])
   })
 
+  it("toggles the active segment elevation panel independently from map focus", () => {
+    useTripStore.getState().toggleElevationSegment(4)
+
+    expect(useTripStore.getState().elevationSegmentId).toBe(4)
+    expect(useTripStore.getState().focusedSegmentId).toBe(1)
+
+    useTripStore.getState().toggleElevationSegment(4)
+
+    expect(useTripStore.getState().elevationSegmentId).toBeNull()
+  })
+
+  it("switches the active segment elevation panel when a different segment is chosen", () => {
+    useTripStore.getState().toggleElevationSegment(2)
+    useTripStore.getState().toggleElevationSegment(5)
+
+    expect(useTripStore.getState().elevationSegmentId).toBe(5)
+  })
+
+  it("clears the segment elevation panel when its segment is deselected", () => {
+    useTripStore.getState().toggleElevationSegment(3)
+
+    expect(useTripStore.getState().elevationSegmentId).toBe(3)
+
+    useTripStore.getState().toggleSegment(3)
+
+    expect(useTripStore.getState().selectedSegmentIds).toEqual([1, 2, 4, 5, 6])
+    expect(useTripStore.getState().elevationSegmentId).toBeNull()
+  })
+
   it("calculates trip totals from all selected segments and side trips", () => {
-    useTripStore.getState().clearSelections()
-    useTripStore.getState().toggleSegment(1)
-    useTripStore.getState().toggleSegment(4)
+    ;[2, 3, 5, 6].forEach((segmentId) => {
+      useTripStore.getState().toggleSegment(segmentId)
+    })
     useTripStore.getState().toggleSideTrip("cradle-summit")
     useTripStore.getState().toggleSideTrip("mt-ossa")
 
@@ -87,9 +115,12 @@ describe("trip store", () => {
 
   it("persists exit method, selected segments, and side trips under the expected storage key", async () => {
     useTripStore.getState().setExitMethod("walk")
-    useTripStore.getState().selectAllSegments()
+    useTripStore.getState().toggleSegment(7)
     useTripStore.getState().toggleSideTrip("mt-ossa")
     useTripStore.getState().setFocusedSegment(4)
+    useTripStore.getState().toggleElevationSegment(5)
+    useTripStore.getState().setSegmentNote(4, "Check hut availability")
+    useTripStore.getState().setOverallNote("Call parks before departure")
 
     await useTripStore.persist.rehydrate()
 
@@ -99,5 +130,26 @@ describe("trip store", () => {
     expect(storedValue).toContain("\"selectedSegmentIds\":[1,2,3,4,5,6,7]")
     expect(storedValue).toContain("\"selectedSideTrips\":[\"mt-ossa\"]")
     expect(storedValue).toContain("\"focusedSegmentId\":4")
+    expect(storedValue).toContain("\"elevationSegmentId\":5")
+    expect(storedValue).toContain("\"segmentNotes\":{\"4\":\"Check hut availability\"}")
+    expect(storedValue).toContain("\"overallNote\":\"Call parks before departure\"")
+  })
+
+  it("stores and replaces notes for main day segments only", () => {
+    useTripStore.getState().setSegmentNote(3, "Take extra water")
+    useTripStore.getState().setSegmentNote(3, "Refill at creek crossing")
+    useTripStore.getState().setSegmentNote(99, "Ignore invalid segment")
+
+    expect(useTripStore.getState().segmentNotes).toEqual({
+      3: "Refill at creek crossing",
+    })
+  })
+
+  it("stores and replaces the overall trip note", () => {
+    useTripStore.getState().setOverallNote("Book transport")
+    expect(useTripStore.getState().overallNote).toBe("Book transport")
+
+    useTripStore.getState().setOverallNote("Book transport and ferry timing")
+    expect(useTripStore.getState().overallNote).toBe("Book transport and ferry timing")
   })
 })

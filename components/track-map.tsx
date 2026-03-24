@@ -57,6 +57,21 @@ export function getMapFocusPaths({
   return focusedPaths
 }
 
+export function getTrackMapStatusText(
+  focusedSegmentId: number | null,
+  selectedSideTripCount: number
+) {
+  const baseLabel = focusedSegmentId
+    ? `Segment ${focusedSegmentId} focused`
+    : "Selected trip shown"
+
+  if (selectedSideTripCount === 0) {
+    return baseLabel
+  }
+
+  return `${baseLabel} | ${selectedSideTripCount} side trip${selectedSideTripCount > 1 ? "s" : ""} shown`
+}
+
 export function TrackMap({ className, immersive = false }: { className?: string; immersive?: boolean }) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
@@ -321,10 +336,7 @@ export function TrackMap({ className, immersive = false }: { className?: string;
     >
       <div className={cn("border-b border-border bg-background/78", immersive ? "px-4 py-2" : "p-3")}>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Day {selectedDay} highlighted
-          {selectedSideTrips.length > 0 && (
-            <span className="text-accent"> | {selectedSideTrips.length} side trip{selectedSideTrips.length > 1 ? "s" : ""} shown</span>
-          )}
+          {getTrackMapStatusText(focusedSegmentId, selectedSideTrips.length)}
         </p>
       </div>
       <div

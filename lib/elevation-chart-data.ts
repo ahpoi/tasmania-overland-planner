@@ -1,8 +1,18 @@
-import { elevationProfiles, sideTrips } from "@/lib/overland-data"
+import { days, elevationProfiles, sideTrips } from "@/lib/overland-data"
 
 export interface ElevationChartPoint {
   distance: number
   elevation: number
+}
+
+export interface ElevationChartMarker {
+  key: string
+  distance: number
+  elevation: number
+  label: string
+  shortLabel?: string
+  endDistance?: number
+  markerType: "segment-boundary" | "side-trip"
 }
 
 const sideTripBranchDistances: Record<string, number> = {
@@ -14,6 +24,24 @@ const sideTripBranchDistances: Record<string, number> = {
   "fergusson-falls": 4.8,
   "dalton-falls": 4.8,
   "hartnett-falls": 4.8,
+}
+
+const sideTripShortLabels: Record<string, string> = {
+  "cradle-summit": "Cradle Mtn",
+  "barn-bluff": "Barn Bluff",
+  "mt-ossa": "Mt Ossa",
+  "pelion-east": "Pelion East",
+  "mt-oakleigh": "Mt Oakleigh",
+  "fergusson-falls": "Fergusson Falls",
+  "dalton-falls": "D'Alton Falls",
+  "hartnett-falls": "Hartnett Falls",
+}
+
+function shortenSegmentLabel(label: string) {
+  return label
+    .replace(/\s+Huts?$/u, "")
+    .replace(/\s+Hut$/u, "")
+    .replace(/^New\s+/u, "")
 }
 
 function interpolateElevationAtDistance(profile: ElevationChartPoint[], distance: number) {
@@ -98,11 +126,30 @@ function appendSegment(
   })
 }
 
-export function buildElevationChartData(selectedDay: number, selectedSideTripIds: string[]) {
-  const mainProfile = elevationProfiles[selectedDay] || []
-  const dayDistance = mainProfile[mainProfile.length - 1]?.distance || 0
+function buildChartSummary(profile: ElevationChartPoint[], markers: ElevationChartMarker[] = []) {
+  if (profile.length === 0) {
+    return {
+      profile,
+      markers,
+      minElevation: 0,
+      maxElevation: 0,
+      maxDistance: 0,
+    }
+  }
 
-  const activeSideTrips = sideTrips
+  const elevations = profile.map((point) => point.elevation)
+
+  return {
+    profile,
+    markers,
+    minElevation: Math.min(...elevations) - 50,
+    maxElevation: Math.max(...elevations) + 50,
+    maxDistance: profile[profile.length - 1]?.distance ?? 0,
+  }
+}
+
+function getActiveSideTripsForDay(selectedDay: number, selectedSideTripIds: string[], dayDistance: number) {
+  return sideTrips
     .filter(
       (sideTrip) =>
         sideTrip.dayId === selectedDay &&
@@ -114,6 +161,13 @@ export function buildElevationChartData(selectedDay: number, selectedSideTripIds
       const bDistance = sideTripBranchDistances[b.id] ?? dayDistance / 2
       return aDistance - bDistance
     })
+}
+
+function buildSegmentProfile(selectedDay: number, selectedSideTripIds: string[]) {
+  const mainProfile = elevationProfiles[selectedDay] || []
+  const dayDistance = mainProfile[mainProfile.length - 1]?.distance || 0
+
+  const activeSideTrips = getActiveSideTripsForDay(selectedDay, selectedSideTripIds, dayDistance)
 
   const profile: ElevationChartPoint[] = []
   let currentBaseDistance = 0
@@ -136,13 +190,89 @@ export function buildElevationChartData(selectedDay: number, selectedSideTripIds
 
   appendSegment(profile, remainingBaseSegment, currentBaseDistance, remainingStartDistance)
 
-  const stitchedProfile = profile.length > 0 ? profile : mainProfile
-  const elevations = stitchedProfile.map((point) => point.elevation)
+  return profile.length > 0 ? profile : mainProfile
+}
 
-  return {
-    profile: stitchedProfile,
-    minElevation: Math.min(...elevations) - 50,
-    maxElevation: Math.max(...elevations) + 50,
-    maxDistance: stitchedProfile[stitchedProfile.length - 1]?.distance ?? 0,
-  }
+function buildSegmentSideTripMarkers(selectedDay: number, selectedSideTripIds: string[]) {
+  const mainProfile = elevationProfiles[selectedDay] || []
+  const dayDistance = mainProfile[mainProfile.length - 1]?.distance || 0
+  const activeSideTrips = getActiveSideTripsForDay(selectedDay, selectedSideTripIds, dayDistance)
+  const profile: ElevationChartPoint[] = []
+  const markers: ElevationChartMarker[] = []
+  let currentBaseDistance = 0
+
+  activeSideTrips.forEach((sideTrip) => {
+    const branchDistance = Math.min(
+      sideTripBranchDistances[sideTrip.id] ?? dayDistance / 2,
+      dayDistance
+    )
+    const baseSegment = sliceMainProfile(mainProfile, currentBaseDistance, branchDistance)
+    const stitchedDistance = profile[profile.length - 1]?.distance ?? 0
+
+    appendSegment(profile, baseSegment, currentBaseDistance, stitchedDistance)
+
+    const sideTripStartDistance = profile[profile.length - 1]?.distance ?? stitchedDistance
+    markers.push({
+      key: `side-trip-${sideTrip.id}`,
+      distance: sideTripStartDistance,
+      elevation: interpolateElevationAtDistance(mainProfile, branchDistance),
+      label: sideTrip.name,
+      shortLabel: sideTripShortLabels[sideTrip.id] ?? sideTrip.name,
+      endDistance:
+        sideTripStartDistance +
+        (sideTrip.elevationProfile?.[sideTrip.elevationProfile.length - 1]?.distance ?? 0),
+      markerType: "side-trip",
+    })
+
+    appendSegment(profile, sideTrip.elevationProfile ?? [], 0, sideTripStartDistance)
+    currentBaseDistance = branchDistance
+  })
+
+  return markers
+}
+
+export function buildSegmentElevationChartData(selectedDay: number, selectedSideTripIds: string[]) {
+  return buildChartSummary(buildSegmentProfile(selectedDay, selectedSideTripIds))
+}
+
+export function buildTripElevationChartData(
+  selectedSegmentIds: number[],
+  selectedSideTripIds: string[]
+) {
+  const profile: ElevationChartPoint[] = []
+  const markers: ElevationChartMarker[] = []
+  const sortedSegmentIds = [...selectedSegmentIds].sort((left, right) => left - right)
+
+  sortedSegmentIds.forEach((segmentId, index) => {
+      const segmentProfile = buildSegmentProfile(segmentId, selectedSideTripIds)
+      const segmentSideTripMarkers = buildSegmentSideTripMarkers(segmentId, selectedSideTripIds)
+      const targetStartDistance = profile[profile.length - 1]?.distance ?? 0
+
+      appendSegment(profile, segmentProfile, 0, targetStartDistance)
+      segmentSideTripMarkers.forEach((marker) => {
+        markers.push({
+          ...marker,
+          distance: targetStartDistance + marker.distance,
+        })
+      })
+
+      if (index < sortedSegmentIds.length - 1) {
+        const day = days.find((candidate) => candidate.id === segmentId)
+
+        markers.push({
+          key: `segment-boundary-${segmentId}`,
+          distance: targetStartDistance + (segmentProfile[segmentProfile.length - 1]?.distance ?? 0),
+          elevation: segmentProfile[segmentProfile.length - 1]?.elevation ?? 0,
+          label: day?.to ?? `Segment ${segmentId}`,
+          shortLabel: shortenSegmentLabel(day?.to ?? `Segment ${segmentId}`),
+          markerType: "segment-boundary",
+        })
+      }
+    })
+
+  return buildChartSummary(profile, markers)
+}
+
+export function buildElevationChartData(selectedDay: number, selectedSideTripIds: string[]) {
+  return buildSegmentElevationChartData(selectedDay, selectedSideTripIds)
 }
